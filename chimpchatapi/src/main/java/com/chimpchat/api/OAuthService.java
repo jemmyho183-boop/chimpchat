@@ -1,56 +1,159 @@
 package com.chimpchat.api;
 
+import java.io.IOException;
 import java.net.URI;
-import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 public class OAuthService {
+    private static final String AUTHORIZATION_ENDPOINT = "https://www.facebook.com/dialog/oauth";
+    private static final String GRAPH_ENDPOINT = "https://graph.facebook.com/v26.0";
+
     private final HttpClient http = HttpClient.newHttpClient();
-    @Value("${app.oauth.instagram.client-id}") String instagramId;
-    @Value("${app.oauth.instagram.client-secret}") String instagramSecret;
-    @Value("${app.oauth.instagram.config-id}") String instagramConfigId;
-    @Value("${app.oauth.instagram.redirect-uri}") String instagramRedirect;
-    @Value("${app.oauth.facebook.client-id}") String facebookId;
-    @Value("${app.oauth.facebook.client-secret}") String facebookSecret;
-    @Value("${app.oauth.facebook.config-id}") String facebookConfigId;
-    @Value("${app.oauth.facebook.redirect-uri}") String facebookRedirect;
+    private final ObjectMapper objectMapper;
+    private final String appId;
+    private final String appSecret;
+    private final String configId;
+    private final String redirectUri;
 
-    String authorizationUrl(String provider, String state) {
-        if ("instagram".equals(provider)) return UriComponentsBuilder.fromUriString("https://www.facebook.com/dialog/oauth")
-                .queryParam("client_id", instagramId).queryParam("config_id", instagramConfigId).queryParam("display", "popup")
-                .queryParam("override_default_response_type", "true").queryParam("redirect_uri", instagramRedirect).queryParam("response_type", "code")
-                .queryParam("scope", "instagram_basic,instagram_manage_comments,instagram_manage_messages")
-                .queryParam("state", state).queryParam("prompt", "login").build().toUriString();
-        if ("facebook".equals(provider)) return UriComponentsBuilder.fromUriString("https://www.facebook.com/dialog/oauth")
-                .queryParam("client_id", facebookId).queryParam("config_id", facebookConfigId).queryParam("display", "popup")
-                .queryParam("override_default_response_type", "true").queryParam("redirect_uri", facebookRedirect).queryParam("response_type", "code")
-                .queryParam("state", state).queryParam("prompt", "login").build().toUriString();
-        throw new IllegalArgumentException("Unsupported provider");
+    public OAuthService(
+            ObjectMapper objectMapper,
+            @Value("${app.oauth.unified.app-id:}") String appId,
+            @Value("${app.oauth.unified.app-secret:}") String appSecret,
+            @Value("${app.oauth.unified.config-id:}") String configId,
+            @Value("${app.oauth.unified.redirect-uri:}") String redirectUri) {
+        this.objectMapper = objectMapper;
+        this.appId = appId;
+        this.appSecret = appSecret;
+        this.configId = configId;
+        this.redirectUri = redirectUri;
     }
 
-    Map<String, Object> exchange(String provider, String code) throws Exception {
-        String id = "instagram".equals(provider) ? instagramId : facebookId;
-        String secret = "instagram".equals(provider) ? instagramSecret : facebookSecret;
-        String redirect = "instagram".equals(provider) ? instagramRedirect : facebookRedirect;
-        String endpoint = "https://graph.facebook.com/v23.0/oauth/access_token";
-        String body = "client_id=" + enc(id) + "&client_secret=" + enc(secret) + "&redirect_uri=" + enc(redirect) + "&code=" + enc(code)
-                + ("facebook".equals(provider) ? "&grant_type=authorization_code" : "&grant_type=authorization_code");
-        HttpRequest request = HttpRequest.newBuilder(URI.create(endpoint)).header("Content-Type", "application/x-www-form-urlencoded")
-                .POST(HttpRequest.BodyPublishers.ofString(body)).build();
-        HttpResponse<String> result = http.send(request, HttpResponse.BodyHandlers.ofString());
-        if (result.statusCode() >= 400) throw new IllegalStateException("Meta token exchange failed");
-        // TODO: persist the returned token encrypted and associate it with the authenticated ChimpChat user.
-        return Map.of("provider", provider, "metaResponse", result.body());
+    String authorizationUrl(String state) {
+        requireConfigured(appId, "META_APP_ID");
+        requireConfigured(configId, "META_CONFIG_ID");
+        requireConfigured(redirectUri, "META_REDIRECT_URI");
+
+        return UriComponentsBuilder.fromUriString(AUTHORIZATION_ENDPOINT)
+                .queryParam("client_id", appId)
+                .queryParam("config_id", configId)
+                .queryParam("redirect_uri", redirectUri)
+                .queryParam("response_type", "code")
+                .queryParam("display", "popup")
+                .queryParam("prompt", "login")
+                .queryParam("state", state)
+                .build()
+                .encode()
+                .toUriString();
     }
 
-    private String enc(String value) { return URLEncoder.encode(value, StandardCharsets.UTF_8); }
+    UnifiedLoginConnection exchangeCode(String code) {
+        requireConfigured(appId, "META_APP_ID");
+        requireConfigured(appSecret, "META_APP_SECRET");
+
+        URI tokenUri = UriComponentsBuilder.fromUriString(GRAPH_ENDPOINT + "/oauth/access_token")
+                .queryParam("client_id", appId)
+                .queryParam("client_secret", appSecret)
+                .queryParam("code", code)
+                .build()
+                .encode()
+                .toUri();
+        JsonNode tokenResponse = getJson(tokenUri);
+        String accessToken = requiredText(tokenResponse, "access_token");
+
+        URI businessUri = UriComponentsBuilder.fromUriString(GRAPH_ENDPOINT + "/me")
+                .queryParam("fields", "client_business_id")
+                .queryParam("access_token", accessToken)
+                .build()
+                .encode()
+                .toUri();
+        String businessId = requiredText(getJson(businessUri), "client_business_id");
+
+        URI accountsUri = UriComponentsBuilder
+                .fromUriString(GRAPH_ENDPOINT + "/me/assigned_instagram_accounts")
+                .queryParam("fields", "id,username")
+                .queryParam("access_token", accessToken)
+                .build()
+                .encode()
+                .toUri();
+        List<InstagramAccount> accounts = readAccounts(getJson(accountsUri));
+        if (accounts.isEmpty()) {
+            throw new UnifiedLoginException("No Instagram accounts were shared with this app.");
+        }
+
+        return new UnifiedLoginConnection(businessId, accounts, accessToken);
+    }
+
+    private List<InstagramAccount> readAccounts(JsonNode response) {
+        JsonNode data = response.path("data");
+        if (!data.isArray()) {
+            throw new UnifiedLoginException("Meta did not return the connected Instagram accounts.");
+        }
+
+        List<InstagramAccount> accounts = new ArrayList<>();
+        for (JsonNode account : data) {
+            accounts.add(new InstagramAccount(
+                    requiredText(account, "id"),
+                    requiredText(account, "username")));
+        }
+        return List.copyOf(accounts);
+    }
+
+    private JsonNode getJson(URI uri) {
+        HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
+        try {
+            HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new UnifiedLoginException(
+                        "Meta API request failed with HTTP " + response.statusCode());
+            }
+            return objectMapper.readTree(response.body());
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new UnifiedLoginException("Meta login was interrupted.", exception);
+        } catch (IOException exception) {
+            throw new UnifiedLoginException("Could not complete the Meta API request.", exception);
+        }
+    }
+
+    private String requiredText(JsonNode json, String field) {
+        JsonNode value = json.path(field);
+        if (value.isMissingNode() || value.isNull() || value.asText().isBlank()) {
+            throw new UnifiedLoginException("Meta response did not include " + field + ".");
+        }
+        return value.asText();
+    }
+
+    private void requireConfigured(String value, String setting) {
+        if (value == null || value.isBlank()) {
+            throw new UnifiedLoginException("Unified Login is not configured. Set " + setting + ".");
+        }
+    }
+
+    record InstagramAccount(String id, String username) {}
+
+    record UnifiedLoginConnection(
+            String clientBusinessId,
+            List<InstagramAccount> accounts,
+            String accessToken) {}
+
+    static class UnifiedLoginException extends RuntimeException {
+        UnifiedLoginException(String message) {
+            super(message);
+        }
+
+        UnifiedLoginException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
 }

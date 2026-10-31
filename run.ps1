@@ -41,6 +41,16 @@ if ([string]::IsNullOrWhiteSpace($env:NGROK_AUTHTOKEN)) {
     throw "NGROK_AUTHTOKEN is missing. Add it to the root .env file or configure it with ngrok."
 }
 
+foreach ($port in @(3000, 8080)) {
+    $listener = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue |
+        Select-Object -First 1
+    if ($listener) {
+        $process = Get-Process -Id $listener.OwningProcess -ErrorAction SilentlyContinue
+        $processName = if ($process) { $process.ProcessName } else { 'unknown process' }
+        throw "Port $port is already in use by $processName (PID $($listener.OwningProcess)). Stop the old ChimpChat service window, then run .\run.ps1 again."
+    }
+}
+
 $npmPath = (Get-Command 'npm.cmd').Source
 $ngrokPath = (Get-Command 'ngrok').Source
 
