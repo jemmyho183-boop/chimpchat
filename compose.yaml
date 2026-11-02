@@ -41,6 +41,8 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-https://gauntlet-sliver-headfirst.ngrok-free.dev/login/oauth2/code/google}
+      META_REDIRECT_URI: ${META_REDIRECT_URI:-https://gauntlet-sliver-headfirst.ngrok-free.dev/api/v1/channels/instagram/oauth/callback}
+      SESSION_COOKIE_SECURE: "true"
       EMAIL_AUTH_ENABLED: ${EMAIL_AUTH_ENABLED:-false}
       MAIL_HOST: ${MAIL_HOST:-}
       MAIL_PORT: ${MAIL_PORT:-587}

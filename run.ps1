@@ -4,6 +4,9 @@ $root = $PSScriptRoot
 $apiDirectory = Join-Path $root 'chimpchatapi'
 $webDirectory = Join-Path $root 'chimpchatweb'
 $apiWrapper = Join-Path $apiDirectory 'mvnw.cmd'
+$publicBaseUrl = 'https://gauntlet-sliver-headfirst.ngrok-free.dev'
+$googleRedirectUri = "$publicBaseUrl/login/oauth2/code/google"
+$instagramRedirectUri = "$publicBaseUrl/api/v1/channels/instagram/oauth/callback"
 
 foreach ($directory in @($apiDirectory, $webDirectory)) {
     if (-not (Test-Path $directory -PathType Container)) {
@@ -41,6 +44,13 @@ if ([string]::IsNullOrWhiteSpace($env:NGROK_AUTHTOKEN)) {
     throw "NGROK_AUTHTOKEN is missing. Add it to the root .env file or configure it with ngrok."
 }
 
+# Public OAuth callbacks and email links must use the HTTPS tunnel URL.
+$env:FRONTEND_URL = $publicBaseUrl
+$env:GOOGLE_REDIRECT_URI = $googleRedirectUri
+$env:META_REDIRECT_URI = $instagramRedirectUri
+$env:SESSION_COOKIE_SECURE = 'true'
+$env:API_PROXY_TARGET = 'http://localhost:8080'
+
 foreach ($port in @(3000, 8080)) {
     $listener = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue |
         Select-Object -First 1
@@ -59,18 +69,46 @@ $apiProcess = Start-Process -FilePath $apiWrapper `
     -WorkingDirectory $apiDirectory `
     -PassThru
 
+function Wait-ForService {
+    param(
+        [string]$Url,
+        [System.Diagnostics.Process]$Process,
+        [string]$ServiceName
+    )
+
+    $timeout = [DateTime]::UtcNow.AddMinutes(2)
+    while ([DateTime]::UtcNow -lt $timeout) {
+        if ($Process.HasExited) {
+            throw "$ServiceName stopped before becoming ready (exit code $($Process.ExitCode))."
+        }
+
+        try {
+            $null = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 3
+            return
+        } catch {
+            Start-Sleep -Seconds 2
+        }
+    }
+
+    throw "$ServiceName did not become ready at $Url within 2 minutes."
+}
+
+Wait-ForService -Url 'http://localhost:8080/api/health' -Process $apiProcess -ServiceName 'ChimpChat API'
+
 $frontendProcess = Start-Process -FilePath $npmPath `
     -ArgumentList @('run', 'dev', '--', '--host', '0.0.0.0') `
     -WorkingDirectory $webDirectory `
     -PassThru
 
+Wait-ForService -Url 'http://localhost:3000' -Process $frontendProcess -ServiceName 'ChimpChat frontend'
+
 $ngrokProcess = Start-Process -FilePath $ngrokPath `
-    -ArgumentList @('http', '3000', '--url', 'gauntlet-sliver-headfirst.ngrok-free.dev') `
+    -ArgumentList @('http', '3000', '--url', ([uri]$publicBaseUrl).Host) `
     -WorkingDirectory $root `
     -PassThru
 
 Write-Host 'Started ChimpChat services in separate windows:'
-Write-Host "  Frontend and API: http://localhost:3000 (API at /api; backend listens on 8080)"
-Write-Host '  ngrok:            https://gauntlet-sliver-headfirst.ngrok-free.dev'
+Write-Host "  Public app:       $publicBaseUrl"
+Write-Host '  Internal only:    frontend :3000, API :8080'
 Write-Host 'Close each service window to stop that service.'
 Write-Host "Process IDs: API $($apiProcess.Id), frontend $($frontendProcess.Id), ngrok $($ngrokProcess.Id)"
