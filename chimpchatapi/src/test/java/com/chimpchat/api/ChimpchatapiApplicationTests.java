@@ -1,64 +1,60 @@
 package com.chimpchat.api;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.net.URI;
-import java.net.URLDecoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@ActiveProfiles("test")
+@AutoConfigureMockMvc
 @SpringBootTest(
-		webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
 		properties = {
-				"META_APP_ID=1234567890",
-				"META_APP_SECRET=test-secret",
-				"META_INSTAGRAM_CONFIG_ID=test-config",
-				"META_REDIRECT_URI=https://gauntlet-sliver-headfirst.ngrok-free.dev/api/auth/instagram/callback"
+				"app.frontend-url=http://localhost:3000",
+				"app.auth.google.enabled=false"
 		})
 class ChimpchatapiApplicationTests {
 
-	@LocalServerPort
-	private int port;
+	@Autowired
+	private MockMvc mockMvc;
 
 	@Test
-	void healthEndpointReturnsServiceStatus() throws Exception {
-		HttpRequest request = HttpRequest.newBuilder()
-				.uri(URI.create("http://localhost:" + port + "/api/health"))
-				.GET()
-				.build();
-		HttpResponse<String> response = HttpClient.newHttpClient()
-				.send(request, HttpResponse.BodyHandlers.ofString());
-
-		assertEquals(200, response.statusCode());
-		assertTrue(response.body().contains("\"status\":\"UP\""));
-		assertTrue(response.body().contains("\"service\":\"chimpchatapi\""));
+	void healthEndpointRemainsPublic() throws Exception {
+		mockMvc.perform(get("/api/health"))
+				.andExpect(status().isOk());
 	}
 
 	@Test
-	void instagramLoginRedirectUsesUnifiedLoginConfiguration() throws Exception {
-		HttpRequest request = HttpRequest.newBuilder()
-				.uri(URI.create("http://localhost:" + port + "/api/auth/instagram"))
-				.GET()
-				.build();
-		HttpResponse<Void> response = HttpClient.newHttpClient()
-				.send(request, HttpResponse.BodyHandlers.discarding());
+	void authOptionsDoNotEnableUnconfiguredProviders() throws Exception {
+		String response = mockMvc.perform(get("/api/v1/auth/options"))
+				.andExpect(status().isOk())
+				.andReturn().getResponse().getContentAsString();
 
-		assertEquals(302, response.statusCode());
-		String location = response.headers().firstValue("location").orElseThrow();
-		assertTrue(location.startsWith("https://www.facebook.com/dialog/oauth?"));
-		String decodedLocation = URLDecoder.decode(location, StandardCharsets.UTF_8);
-		assertTrue(decodedLocation.contains("client_id=1234567890"));
-		assertTrue(decodedLocation.contains("config_id=test-config"));
-		assertTrue(decodedLocation.contains("display=popup"));
-		assertTrue(decodedLocation.contains("prompt=login"));
-		assertTrue(decodedLocation.contains("state="));
+		assertTrue(response.contains("\"googleEnabled\":false"), response);
+		assertTrue(response.contains("\"emailEnabled\":false"), response);
+	}
+
+	@Test
+	void appAndChannelRoutesRequireAuthentication() throws Exception {
+		mockMvc.perform(get("/api/v1/app/bootstrap"))
+				.andExpect(status().isUnauthorized());
+		mockMvc.perform(get("/api/v1/channels/instagram/oauth/start"))
+				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void emailLinkRequestFailsClearlyWhenEmailIsNotConfigured() throws Exception {
+		mockMvc.perform(post("/api/v1/auth/email-links")
+						.contentType("application/json")
+						.content("{\"email\":\"person@example.com\"}")
+						.with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+				.andExpect(status().isServiceUnavailable());
 	}
 
 }

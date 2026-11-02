@@ -1,4 +1,29 @@
 services:
+  database:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-chimpchat}
+      POSTGRES_USER: ${POSTGRES_USER:-chimpchat}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the root .env file}
+    volumes:
+      - chimpchat-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - chimpchat-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   api:
     build:
       context: ./chimpchatapi
@@ -6,9 +31,32 @@ services:
       - path: ./chimpchatapi/.env
         required: false
     environment:
+      SPRING_PROFILES_ACTIVE: production
       FRONTEND_URL: ${FRONTEND_URL:-https://gauntlet-sliver-headfirst.ngrok-free.dev}
+      DATABASE_URL: jdbc:postgresql://database:5432/${POSTGRES_DB:-chimpchat}
+      DATABASE_USERNAME: ${POSTGRES_USER:-chimpchat}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the root .env file}
+      REDIS_URL: redis://redis:6379
+      GOOGLE_AUTH_ENABLED: ${GOOGLE_AUTH_ENABLED:-true}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-https://gauntlet-sliver-headfirst.ngrok-free.dev/login/oauth2/code/google}
+      EMAIL_AUTH_ENABLED: ${EMAIL_AUTH_ENABLED:-false}
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-true}
+      MAIL_SMTP_STARTTLS: ${MAIL_SMTP_STARTTLS:-true}
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:-}
     expose:
       - "8080"
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   frontend:
     build:
@@ -30,3 +78,7 @@ services:
       NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:?Set NGROK_AUTHTOKEN in the root .env file}
     depends_on:
       - frontend
+
+volumes:
+  chimpchat-postgres:
+  chimpchat-redis:

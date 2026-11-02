@@ -1,4 +1,4 @@
-package com.chimpchat.api;
+package com.chimpchat.api.channel.business;
 
 import java.io.IOException;
 import java.net.URI;
@@ -15,7 +15,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 @Service
-public class OAuthService {
+public class MetaInstagramBusiness {
     private static final String AUTHORIZATION_ENDPOINT = "https://www.facebook.com/dialog/oauth";
     private static final String GRAPH_ENDPOINT = "https://graph.facebook.com/v26.0";
 
@@ -26,12 +26,12 @@ public class OAuthService {
     private final String configId;
     private final String redirectUri;
 
-    public OAuthService(
+    public MetaInstagramBusiness(
             ObjectMapper objectMapper,
-            @Value("${app.oauth.unified.app-id:}") String appId,
-            @Value("${app.oauth.unified.app-secret:}") String appSecret,
-            @Value("${app.oauth.unified.config-id:}") String configId,
-            @Value("${app.oauth.unified.redirect-uri:}") String redirectUri) {
+            @Value("${app.oauth.instagram.app-id:}") String appId,
+            @Value("${app.oauth.instagram.app-secret:}") String appSecret,
+            @Value("${app.oauth.instagram.config-id:}") String configId,
+            @Value("${app.oauth.instagram.redirect-uri:}") String redirectUri) {
         this.objectMapper = objectMapper;
         this.appId = appId;
         this.appSecret = appSecret;
@@ -39,7 +39,12 @@ public class OAuthService {
         this.redirectUri = redirectUri;
     }
 
-    String authorizationUrl(String state) {
+    public boolean isConfigured() {
+        return isPresent(appId) && isPresent(appSecret)
+                && isPresent(configId) && isPresent(redirectUri);
+    }
+
+    public String authorizationUrl(String state) {
         requireConfigured(appId, "META_APP_ID");
         requireConfigured(configId, "META_CONFIG_ID");
         requireConfigured(redirectUri, "META_REDIRECT_URI");
@@ -57,19 +62,20 @@ public class OAuthService {
                 .toUriString();
     }
 
-    UnifiedLoginConnection exchangeCode(String code) {
+    public MetaConnection exchangeCode(String code) {
         requireConfigured(appId, "META_APP_ID");
         requireConfigured(appSecret, "META_APP_SECRET");
+        requireConfigured(redirectUri, "META_REDIRECT_URI");
 
         URI tokenUri = UriComponentsBuilder.fromUriString(GRAPH_ENDPOINT + "/oauth/access_token")
                 .queryParam("client_id", appId)
                 .queryParam("client_secret", appSecret)
                 .queryParam("code", code)
+                .queryParam("redirect_uri", redirectUri)
                 .build()
                 .encode()
                 .toUri();
-        JsonNode tokenResponse = getJson(tokenUri);
-        String accessToken = requiredText(tokenResponse, "access_token");
+        String accessToken = requiredText(getJson(tokenUri), "access_token");
 
         URI businessUri = UriComponentsBuilder.fromUriString(GRAPH_ENDPOINT + "/me")
                 .queryParam("fields", "client_business_id")
@@ -88,16 +94,16 @@ public class OAuthService {
                 .toUri();
         List<InstagramAccount> accounts = readAccounts(getJson(accountsUri));
         if (accounts.isEmpty()) {
-            throw new UnifiedLoginException("No Instagram accounts were shared with this app.");
+            throw new ChannelException("No Instagram accounts were shared with this app.");
         }
 
-        return new UnifiedLoginConnection(businessId, accounts, accessToken);
+        return new MetaConnection(businessId, accounts, accessToken);
     }
 
     private List<InstagramAccount> readAccounts(JsonNode response) {
         JsonNode data = response.path("data");
         if (!data.isArray()) {
-            throw new UnifiedLoginException("Meta did not return the connected Instagram accounts.");
+            throw new ChannelException("Meta did not return the connected Instagram accounts.");
         }
 
         List<InstagramAccount> accounts = new ArrayList<>();
@@ -114,45 +120,62 @@ public class OAuthService {
         try {
             HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new UnifiedLoginException(
-                        "Meta API request failed with HTTP " + response.statusCode());
+                throw new ChannelException(metaError(response));
             }
             return objectMapper.readTree(response.body());
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
-            throw new UnifiedLoginException("Meta login was interrupted.", exception);
+            throw new ChannelException("Meta login was interrupted.", exception);
         } catch (IOException exception) {
-            throw new UnifiedLoginException("Could not complete the Meta API request.", exception);
+            throw new ChannelException("Could not complete the Meta API request.", exception);
         }
+    }
+
+    private String metaError(HttpResponse<String> response) {
+        String message = "Meta API request failed with HTTP " + response.statusCode();
+        JsonNode error = objectMapper.readTree(response.body()).path("error");
+        String description = error.path("message").asText("");
+        String code = error.path("code").asText("");
+        String subcode = error.path("error_subcode").asText("");
+        if (!description.isBlank()) {
+            message += ": " + description;
+        }
+        if (!code.isBlank()) {
+            message += " (code " + code
+                    + (subcode.isBlank() ? "" : ", subcode " + subcode)
+                    + ")";
+        }
+        return message;
     }
 
     private String requiredText(JsonNode json, String field) {
         JsonNode value = json.path(field);
         if (value.isMissingNode() || value.isNull() || value.asText().isBlank()) {
-            throw new UnifiedLoginException("Meta response did not include " + field + ".");
+            throw new ChannelException("Meta response did not include " + field + ".");
         }
         return value.asText();
     }
 
     private void requireConfigured(String value, String setting) {
-        if (value == null || value.isBlank()) {
-            throw new UnifiedLoginException("Unified Login is not configured. Set " + setting + ".");
+        if (!isPresent(value)) {
+            throw new ChannelException("Instagram connection is not configured. Set " + setting + ".");
         }
     }
 
-    record InstagramAccount(String id, String username) {}
+    private boolean isPresent(String value) {
+        return value != null && !value.isBlank();
+    }
 
-    record UnifiedLoginConnection(
-            String clientBusinessId,
-            List<InstagramAccount> accounts,
-            String accessToken) {}
+    public record InstagramAccount(String id, String username) {}
 
-    static class UnifiedLoginException extends RuntimeException {
-        UnifiedLoginException(String message) {
+    public record MetaConnection(String clientBusinessId, List<InstagramAccount> accounts, String accessToken) {}
+
+    public static class ChannelException extends RuntimeException {
+        public ChannelException(String message) {
             super(message);
         }
 
-        UnifiedLoginException(String message, Throwable cause) {
+        public ChannelException(String message, Throwable cause) {
             super(message, cause);
         }
     }
