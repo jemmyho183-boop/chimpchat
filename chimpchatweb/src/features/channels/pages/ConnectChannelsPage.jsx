@@ -9,6 +9,8 @@ const channelErrors = {
   instagram_code_missing: 'Instagram did not complete the connection. Please try again.',
   instagram_connection_failed: 'We could not save the Instagram connection. Please try again.',
   token_encryption_unavailable: 'Secure channel storage is not configured yet.',
+  channel_credentials_unavailable: 'The saved Instagram connection needs attention. Please connect Instagram again.',
+  connection_not_found: 'That channel connection is no longer available. Refresh and try again.',
 }
 
 function InstagramMark() {
@@ -24,7 +26,7 @@ export function ConnectChannelsPage({ bootstrap }) {
   const [connecting, setConnecting] = useState(false)
   const error = channelErrors[params.get('channel_error')]
   const instagram = bootstrap.channels.find((channel) => channel.provider === 'INSTAGRAM')
-  const instagramReady = instagram?.status !== 'SETUP_REQUIRED'
+  const instagramReady = instagram?.status === 'NOT_CONNECTED' || instagram?.status === 'CONNECTED'
 
   function connectInstagram() {
     setConnecting(true)

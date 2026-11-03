@@ -11,6 +11,15 @@ export function DashboardPage({ bootstrap }) {
   const instagram = bootstrap.channels.find((channel) => channel.provider === 'INSTAGRAM')
   const justConnected = params.get('channel_connected') === 'instagram'
 
+  if (!instagram) {
+    return <main className="loading-page error-page">
+      <p className="eyebrow">WORKSPACE SETUP</p>
+      <h1>We could not load your channel.</h1>
+      <p className="intro-copy">Refresh the page to try again. If the problem continues, contact your workspace administrator.</p>
+      <button className="button button-primary" type="button" onClick={() => window.location.reload()}>Refresh</button>
+    </main>
+  }
+
   async function disconnectInstagram() {
     if (!instagram?.connectionId || !window.confirm('Disconnect Instagram from this workspace?')) return
     setDisconnecting(true)
