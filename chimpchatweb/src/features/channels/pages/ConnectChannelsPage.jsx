@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { BrandHeader } from '../../../shared/components/BrandHeader'
+import { Button } from '../../../shared/components/Button'
+import { useToast } from '../../../shared/components/toast-context'
 
 const channelErrors = {
   instagram_not_configured: 'Instagram connection is not configured yet. Contact your workspace administrator.',
@@ -24,11 +26,16 @@ function InstagramMark() {
 export function ConnectChannelsPage({ bootstrap }) {
   const [params] = useSearchParams()
   const [connecting, setConnecting] = useState(false)
+  const { notify } = useToast()
   const error = channelErrors[params.get('channel_error')]
   const instagram = bootstrap.channels.find((channel) => channel.provider === 'INSTAGRAM')
   const instagramReady = instagram?.status === 'NOT_CONNECTED' || instagram?.status === 'CONNECTED'
 
   function connectInstagram() {
+    if (!instagramReady) {
+      notify('Instagram is not ready to connect yet.', 'error')
+      return
+    }
     setConnecting(true)
     window.location.assign('/api/v1/channels/instagram/oauth/start')
   }
@@ -52,10 +59,10 @@ export function ConnectChannelsPage({ bootstrap }) {
           </div>
           <h2>Instagram</h2>
           <p>Manage professional account comments and direct messages from one workspace.</p>
-          <button className="button button-primary" type="button" onClick={connectInstagram} disabled={!instagramReady || connecting}>
+          <Button type="button" onClick={connectInstagram} disabled={connecting}>
             {connecting ? 'Opening Instagram…' : instagramReady ? 'Connect Instagram' : 'Setup required'}
             {!connecting && <span className="button-arrow" aria-hidden="true">↗</span>}
-          </button>
+          </Button>
           {!instagramReady && (
             <p className="channel-help">Instagram credentials and secure token storage must be configured before connecting.</p>
           )}
@@ -68,7 +75,7 @@ export function ConnectChannelsPage({ bootstrap }) {
           </div>
           <h2>WhatsApp</h2>
           <p>Keep customer conversations moving across WhatsApp Business.</p>
-          <button className="button button-disabled" type="button" disabled>Coming soon</button>
+          <Button variant="disabled" type="button" disabled>Coming soon</Button>
         </section>
 
         <section className="channel-card channel-card-future" aria-label="Facebook, coming soon">
@@ -78,7 +85,7 @@ export function ConnectChannelsPage({ bootstrap }) {
           </div>
           <h2>Facebook</h2>
           <p>Bring your Facebook Page messages into the same shared inbox.</p>
-          <button className="button button-disabled" type="button" disabled>Coming soon</button>
+          <Button variant="disabled" type="button" disabled>Coming soon</Button>
         </section>
       </div>
       <p className="onboarding-footnote">Your channels belong to <strong>{bootstrap.workspace.name}</strong>. You can disconnect them at any time.</p>

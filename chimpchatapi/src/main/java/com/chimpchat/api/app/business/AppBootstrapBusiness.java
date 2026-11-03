@@ -5,40 +5,31 @@ import java.util.List;
 import java.util.UUID;
 
 import com.chimpchat.api.app.dto.AppBootstrapResponseDto;
-import com.chimpchat.api.auth.dto.CurrentUserResponseDto;
 import com.chimpchat.api.auth.entity.UserEntity;
+import com.chimpchat.api.auth.mapper.UserMapper;
 import com.chimpchat.api.auth.repository.UserRepository;
 import com.chimpchat.api.channel.business.InstagramChannelBusiness;
 import com.chimpchat.api.channel.business.MetaInstagramBusiness;
 import com.chimpchat.api.channel.business.TokenEncryptionBusiness;
 import com.chimpchat.api.channel.dto.ChannelStatusResponseDto;
 import com.chimpchat.api.workspace.business.WorkspaceBusiness;
-import com.chimpchat.api.workspace.dto.WorkspaceResponseDto;
+import com.chimpchat.api.workspace.mapper.WorkspaceMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
+@RequiredArgsConstructor
 public class AppBootstrapBusiness {
     private final UserRepository userRepository;
     private final WorkspaceBusiness workspaceBusiness;
     private final InstagramChannelBusiness instagramChannelBusiness;
     private final MetaInstagramBusiness metaInstagramBusiness;
     private final TokenEncryptionBusiness tokenEncryptionBusiness;
-
-    public AppBootstrapBusiness(
-            UserRepository userRepository,
-            WorkspaceBusiness workspaceBusiness,
-            InstagramChannelBusiness instagramChannelBusiness,
-            MetaInstagramBusiness metaInstagramBusiness,
-            TokenEncryptionBusiness tokenEncryptionBusiness) {
-        this.userRepository = userRepository;
-        this.workspaceBusiness = workspaceBusiness;
-        this.instagramChannelBusiness = instagramChannelBusiness;
-        this.metaInstagramBusiness = metaInstagramBusiness;
-        this.tokenEncryptionBusiness = tokenEncryptionBusiness;
-    }
+    private final UserMapper userMapper;
+    private final WorkspaceMapper workspaceMapper;
 
     @Transactional(readOnly = true)
     public AppBootstrapResponseDto get(UUID userId) {
@@ -60,8 +51,8 @@ public class AppBootstrapBusiness {
         String nextStep = connected ? "DASHBOARD"
                 : instagramReady ? "CONNECT_CHANNEL" : "CHANNEL_SETUP_REQUIRED";
         return new AppBootstrapResponseDto(
-                new CurrentUserResponseDto(user.getId(), user.getEmail()),
-                new WorkspaceResponseDto(workspace.getId(), workspace.getName()),
+                userMapper.toCurrentUserResponse(user),
+                workspaceMapper.toResponse(workspace),
                 nextStep,
                 channels);
     }

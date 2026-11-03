@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { apiPost } from '../../../shared/api/client'
 import { BrandHeader } from '../../../shared/components/BrandHeader'
+import { Button } from '../../../shared/components/Button'
 
 export function VerifyEmailPage() {
   const [params] = useSearchParams()
@@ -31,9 +32,9 @@ export function VerifyEmailPage() {
         <p className="eyebrow">YOUR EMAIL LINK IS READY</p>
         <h1>Confirm it’s you.</h1>
         <p className="message-copy">This one-time sign-in link will securely open your ChimpChat workspace.</p>
-        <button className="button button-primary" type="button" onClick={verify} disabled={!token || busy}>
+        <Button type="button" onClick={verify} disabled={!token || busy}>
           {busy ? 'Verifying link…' : 'Continue to ChimpChat'}
-        </button>
+        </Button>
         {!token && <p className="inline-notice notice-error" role="alert">This sign-in link is missing. Request a new one.</p>}
         {error && <p className="inline-notice notice-error" role="alert">{error}</p>}
         <Link className="text-link" to="/signin">Back to sign in</Link>

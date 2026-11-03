@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { apiDelete, apiPost } from '../../../shared/api/client'
 import { BrandHeader } from '../../../shared/components/BrandHeader'
+import { useToast } from '../../../shared/components/toast-context'
 
 export function DashboardPage({ bootstrap }) {
   const [params] = useSearchParams()
   const [disconnecting, setDisconnecting] = useState(false)
   const [error, setError] = useState('')
+  const { notify } = useToast()
   const navigate = useNavigate()
   const instagram = bootstrap.channels.find((channel) => channel.provider === 'INSTAGRAM')
   const justConnected = params.get('channel_connected') === 'instagram'
@@ -26,9 +28,11 @@ export function DashboardPage({ bootstrap }) {
     setError('')
     try {
       await apiDelete(`/api/v1/channels/${instagram.connectionId}`)
+      notify('Instagram has been disconnected from your workspace.')
       navigate('/connect-channels', { replace: true })
     } catch (requestError) {
       setError(requestError.message)
+      notify(requestError.message, 'error')
     } finally {
       setDisconnecting(false)
     }
@@ -40,6 +44,7 @@ export function DashboardPage({ bootstrap }) {
       navigate('/signin', { replace: true })
     } catch (requestError) {
       setError(requestError.message)
+      notify(requestError.message, 'error')
     }
   }
 

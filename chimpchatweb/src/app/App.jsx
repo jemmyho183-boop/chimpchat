@@ -6,6 +6,8 @@ import { DashboardPage } from '../features/dashboard/pages/DashboardPage'
 import { EmailLinkSentPage } from '../features/auth/pages/EmailLinkSentPage'
 import { SignInPage } from '../features/auth/pages/SignInPage'
 import { VerifyEmailPage } from '../features/auth/pages/VerifyEmailPage'
+import { Button } from '../shared/components/Button'
+import { ToastProvider } from '../shared/components/Toast'
 
 function LoadingPage({ message = 'Getting your workspace ready…' }) {
   return <main className="loading-page" aria-live="polite"><span className="loading-mark" aria-hidden="true" />{message}</main>
@@ -15,7 +17,7 @@ function LoadErrorPage({ onRetry }) {
   return <main className="loading-page error-page">
     <p className="eyebrow">TEMPORARILY UNAVAILABLE</p>
     <h1>We couldn’t load your workspace.</h1>
-    <button className="button button-primary" onClick={onRetry}>Try again</button>
+    <Button type="button" onClick={onRetry}>Try again</Button>
   </main>
 }
 
@@ -88,7 +90,7 @@ function SignedOutRoute({ children }) {
 }
 
 export function App() {
-  return <BrowserRouter>
+  return <ToastProvider><BrowserRouter>
     <Routes>
       <Route path="/" element={<HomeRoute />} />
       <Route path="/signin" element={<SignedOutRoute><SignInPage /></SignedOutRoute>} />
@@ -102,5 +104,5 @@ export function App() {
       } />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-  </BrowserRouter>
+  </BrowserRouter></ToastProvider>
 }

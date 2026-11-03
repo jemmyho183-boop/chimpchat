@@ -1,6 +1,8 @@
 package com.chimpchat.api.auth.controller;
 
 import com.chimpchat.api.auth.business.AppUserPrincipal;
+import com.chimpchat.api.auth.business.AuthException;
+import com.chimpchat.api.auth.business.AuthTokenBusiness;
 import com.chimpchat.api.auth.business.EmailLinkBusiness;
 import com.chimpchat.api.auth.business.LoginSessionBusiness;
 import com.chimpchat.api.auth.dto.AuthOptionsResponseDto;
@@ -31,14 +33,17 @@ import org.springframework.web.server.ResponseStatusException;
 public class AuthController {
     private final EmailLinkBusiness emailLinkBusiness;
     private final LoginSessionBusiness loginSessionBusiness;
+    private final AuthTokenBusiness tokenBusiness;
     private final boolean googleEnabled;
 
     public AuthController(
             EmailLinkBusiness emailLinkBusiness,
             LoginSessionBusiness loginSessionBusiness,
+            AuthTokenBusiness tokenBusiness,
             ClientRegistrationRepository clientRegistrationRepository) {
         this.emailLinkBusiness = emailLinkBusiness;
         this.loginSessionBusiness = loginSessionBusiness;
+        this.tokenBusiness = tokenBusiness;
         this.googleEnabled = clientRegistrationRepository.findByRegistrationId("google") != null;
     }
 
@@ -69,6 +74,21 @@ public class AuthController {
             HttpServletResponse servletResponse) {
         UserEntity user = emailLinkBusiness.consume(request.token());
         loginSessionBusiness.establish(user, servletRequest, servletResponse);
+        tokenBusiness.issue(user, servletResponse);
+        return new CurrentUserResponseDto(user.getId(), user.getEmail());
+    }
+
+    @PostMapping("/refresh")
+    public CurrentUserResponseDto refresh(
+            HttpServletRequest servletRequest,
+            HttpServletResponse servletResponse) {
+        String rawRefreshToken = cookie(servletRequest, AuthTokenBusiness.REFRESH_COOKIE);
+        if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
+            throw new AuthException(HttpStatus.UNAUTHORIZED, "refresh_token_expired",
+                    "Your session has expired. Please sign in again.");
+        }
+        UserEntity user = tokenBusiness.refresh(rawRefreshToken, servletResponse);
+        loginSessionBusiness.establish(user, servletRequest, servletResponse);
         return new CurrentUserResponseDto(user.getId(), user.getEmail());
     }
 
@@ -81,8 +101,25 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public void logout(HttpSession session) {
+    public void logout(
+            HttpServletRequest request,
+            HttpSession session,
+            HttpServletResponse response) {
+        tokenBusiness.revoke(cookie(request, AuthTokenBusiness.REFRESH_COOKIE));
         session.invalidate();
         SecurityContextHolder.clearContext();
+        tokenBusiness.clear(response);
+    }
+
+    private String cookie(HttpServletRequest request, String name) {
+        if (request.getCookies() == null) {
+            return null;
+        }
+        for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
+            if (name.equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+        return null;
     }
 }

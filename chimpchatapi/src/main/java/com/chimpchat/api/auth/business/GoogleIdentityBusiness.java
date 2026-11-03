@@ -43,13 +43,16 @@ public class GoogleIdentityBusiness {
     }
 
     private UserEntity createGoogleIdentity(String email, String subject) {
-        if (userRepository.findByEmail(email).isPresent()) {
+        UserEntity user = userRepository.findByEmail(email).orElseGet(() -> {
+            UserEntity created = userRepository.save(new UserEntity(email));
+            workspaceBusiness.getOrCreatePersonalWorkspace(created);
+            return created;
+        });
+        if (identityRepository.existsByUserIdAndProvider(user.getId(), "GOOGLE")) {
             throw new AuthException(HttpStatus.CONFLICT, "identity_link_required",
-                    "This email already has an account. Sign in with that account instead.");
+                    "This account is already linked to another Google identity.");
         }
-        UserEntity user = userRepository.save(new UserEntity(email));
         identityRepository.save(new ExternalIdentityEntity(user, "GOOGLE", subject));
-        workspaceBusiness.getOrCreatePersonalWorkspace(user);
         return user;
     }
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { apiGet, apiPost } from '../../../shared/api/client'
 import { BrandHeader } from '../../../shared/components/BrandHeader'
+import { Button } from '../../../shared/components/Button'
 
 const authErrors = {
   identity_link_required: 'This email already has an account. Sign in with your email to continue.',
@@ -58,10 +59,10 @@ export function SignInPage() {
           <p className="login-copy">Sign in or create your account to connect your channels.</p>
 
           {options?.googleEnabled && (
-            <a className="button button-secondary google-button" href="/oauth2/authorization/google">
+            <Button as="a" variant="secondary" className="google-button" href="/oauth2/authorization/google">
               <span className="google-mark" aria-hidden="true">G</span>
               <span>Continue with Google</span>
-            </a>
+            </Button>
           )}
 
           {options?.googleEnabled && options?.emailEnabled && <div className="separator"><span>or continue with email</span></div>}
@@ -79,10 +80,10 @@ export function SignInPage() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />
-            <button className="button button-primary" type="submit" disabled={!options?.emailEnabled || busy}>
+            <Button type="submit" disabled={!options?.emailEnabled || busy}>
               {busy ? 'Sending sign-in link…' : 'Continue with email'}
               {!busy && <span className="button-arrow" aria-hidden="true">↗</span>}
-            </button>
+            </Button>
           </form>
 
           {options && !options.emailEnabled && !options.googleEnabled && (

@@ -110,6 +110,10 @@ public class EmailLinkBusiness {
 
     @Transactional
     public UserEntity consume(String rawToken) {
+        if (rawToken == null || rawToken.isBlank()) {
+            throw new AuthException(HttpStatus.BAD_REQUEST, "invalid_link",
+                    "This sign-in link is invalid or has expired. Request a new link.");
+        }
         String tokenHash = hash(rawToken);
         EmailLoginTokenEntity loginToken = tokenRepository
                 .findActiveForUpdate(tokenHash, Instant.now())
