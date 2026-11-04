@@ -15,7 +15,7 @@ From the project directory on Windows:
 .\mvnw.cmd spring-boot:run
 ```
 
-The API starts at `http://localhost:8080`.
+The API listens on the port configured by `API_PORT` (default `8080`).
 
 ## Health endpoint
 

@@ -17,7 +17,11 @@ public class GoogleOAuthConfiguration {
     ClientRegistrationRepository clientRegistrationRepository(
             @Value("${app.auth.google.client-id:}") String clientId,
             @Value("${app.auth.google.client-secret:}") String clientSecret,
-            @Value("${app.auth.google.redirect-uri:http://localhost:3000/login/oauth2/code/google}") String redirectUri,
+            @Value("${app.auth.google.redirect-uri}") String redirectUri,
+            @Value("${app.auth.google.authorization-uri}") String authorizationUri,
+            @Value("${app.auth.google.token-uri}") String tokenUri,
+            @Value("${app.auth.google.jwk-set-uri}") String jwkSetUri,
+            @Value("${app.auth.google.user-info-uri}") String userInfoUri,
             @Value("${app.auth.google.enabled:true}") boolean enabled) {
         if (!enabled || clientId.isBlank() || clientSecret.isBlank()) {
             return registrationId -> null;
@@ -30,10 +34,10 @@ public class GoogleOAuthConfiguration {
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .redirectUri(redirectUri)
                 .scope(List.of("openid", "email", "profile"))
-                .authorizationUri("https://accounts.google.com/o/oauth2/v2/auth")
-                .tokenUri("https://oauth2.googleapis.com/token")
-                .jwkSetUri("https://www.googleapis.com/oauth2/v3/certs")
-                .userInfoUri("https://openidconnect.googleapis.com/v1/userinfo")
+                .authorizationUri(authorizationUri)
+                .tokenUri(tokenUri)
+                .jwkSetUri(jwkSetUri)
+                .userInfoUri(userInfoUri)
                 .userNameAttributeName("sub")
                 .clientName("Google")
                 .build();

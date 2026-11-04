@@ -27,22 +27,26 @@ services:
   api:
     build:
       context: ./chimpchatapi
-    env_file:
-      - path: ./chimpchatapi/.env
-        required: false
     environment:
       SPRING_PROFILES_ACTIVE: production
-      FRONTEND_URL: ${FRONTEND_URL:-https://gauntlet-sliver-headfirst.ngrok-free.dev}
-      DATABASE_URL: jdbc:postgresql://database:5432/${POSTGRES_DB:-chimpchat}
+      API_PORT: ${API_PORT:-8080}
+      FRONTEND_URL: https://${NGROK_DOMAIN:?Set NGROK_DOMAIN in the root .env file}
+      DATABASE_URL: ${DATABASE_URL:-jdbc:postgresql://database:5432/${POSTGRES_DB:-chimpchat}}
       DATABASE_USERNAME: ${POSTGRES_USER:-chimpchat}
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the root .env file}
-      REDIS_URL: redis://redis:6379
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       GOOGLE_AUTH_ENABLED: ${GOOGLE_AUTH_ENABLED:-true}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-https://gauntlet-sliver-headfirst.ngrok-free.dev/login/oauth2/code/google}
-      META_REDIRECT_URI: ${META_REDIRECT_URI:-https://gauntlet-sliver-headfirst.ngrok-free.dev/api/v1/channels/instagram/oauth/callback}
-      SESSION_COOKIE_SECURE: "true"
+      GOOGLE_AUTHORIZATION_URI: ${GOOGLE_AUTHORIZATION_URI:-https://accounts.google.com/o/oauth2/v2/auth}
+      GOOGLE_TOKEN_URI: ${GOOGLE_TOKEN_URI:-https://oauth2.googleapis.com/token}
+      GOOGLE_JWK_SET_URI: ${GOOGLE_JWK_SET_URI:-https://www.googleapis.com/oauth2/v3/certs}
+      GOOGLE_USER_INFO_URI: ${GOOGLE_USER_INFO_URI:-https://openidconnect.googleapis.com/v1/userinfo}
+      META_APP_ID: ${META_APP_ID:-}
+      META_APP_SECRET: ${META_APP_SECRET:-}
+      META_CONFIG_ID: ${META_CONFIG_ID:-}
+      META_AUTHORIZATION_URI: ${META_AUTHORIZATION_URI:-https://www.facebook.com/dialog/oauth}
+      META_GRAPH_URI: ${META_GRAPH_URI:-https://graph.facebook.com/v26.0}
       EMAIL_AUTH_ENABLED: ${EMAIL_AUTH_ENABLED:-false}
       MAIL_HOST: ${MAIL_HOST:-}
       MAIL_PORT: ${MAIL_PORT:-587}
@@ -53,7 +57,7 @@ services:
       MAIL_SMTP_STARTTLS: ${MAIL_SMTP_STARTTLS:-true}
       TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:-}
     expose:
-      - "8080"
+      - "${API_PORT:-8080}"
     depends_on:
       database:
         condition: service_healthy
@@ -64,9 +68,11 @@ services:
     build:
       context: ./chimpchatweb
     environment:
-      API_PROXY_TARGET: http://api:8080
+      API_PROXY_TARGET: http://api:${API_PORT:-8080}
+      FRONTEND_URL: https://${NGROK_DOMAIN:?Set NGROK_DOMAIN in the root .env file}
+      FRONTEND_PORT: ${FRONTEND_PORT:-3000}
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3000}:${FRONTEND_PORT:-3000}"
     depends_on:
       - api
 
@@ -74,8 +80,8 @@ services:
     image: ngrok/ngrok:latest
     command:
       - http
-      - --url=gauntlet-sliver-headfirst.ngrok-free.dev
-      - frontend:3000
+      - --url=${NGROK_DOMAIN:?Set NGROK_DOMAIN in the root .env file}
+      - frontend:${FRONTEND_PORT:-3000}
     environment:
       NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:?Set NGROK_AUTHTOKEN in the root .env file}
     depends_on:

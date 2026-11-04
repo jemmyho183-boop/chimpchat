@@ -16,27 +16,30 @@ import tools.jackson.databind.ObjectMapper;
 
 @Service
 public class MetaInstagramBusiness {
-    private static final String AUTHORIZATION_ENDPOINT = "https://www.facebook.com/dialog/oauth";
-    private static final String GRAPH_ENDPOINT = "https://graph.facebook.com/v26.0";
-
     private final HttpClient http = HttpClient.newHttpClient();
     private final ObjectMapper objectMapper;
     private final String appId;
     private final String appSecret;
     private final String configId;
     private final String redirectUri;
+    private final String authorizationUri;
+    private final String graphUri;
 
     public MetaInstagramBusiness(
             ObjectMapper objectMapper,
             @Value("${app.oauth.instagram.app-id:}") String appId,
             @Value("${app.oauth.instagram.app-secret:}") String appSecret,
             @Value("${app.oauth.instagram.config-id:}") String configId,
-            @Value("${app.oauth.instagram.redirect-uri:}") String redirectUri) {
+            @Value("${app.oauth.instagram.redirect-uri:}") String redirectUri,
+            @Value("${app.oauth.instagram.authorization-uri}") String authorizationUri,
+            @Value("${app.oauth.instagram.graph-uri}") String graphUri) {
         this.objectMapper = objectMapper;
         this.appId = appId;
         this.appSecret = appSecret;
         this.configId = configId;
         this.redirectUri = redirectUri;
+        this.authorizationUri = authorizationUri;
+        this.graphUri = graphUri;
     }
 
     public boolean isConfigured() {
@@ -47,9 +50,9 @@ public class MetaInstagramBusiness {
     public String authorizationUrl(String state) {
         requireConfigured(appId, "META_APP_ID");
         requireConfigured(configId, "META_CONFIG_ID");
-        requireConfigured(redirectUri, "META_REDIRECT_URI");
+        requireConfigured(redirectUri, "FRONTEND_URL or LOCAL_FRONTEND_URL");
 
-        return UriComponentsBuilder.fromUriString(AUTHORIZATION_ENDPOINT)
+        return UriComponentsBuilder.fromUriString(authorizationUri)
                 .queryParam("client_id", appId)
                 .queryParam("config_id", configId)
                 .queryParam("redirect_uri", redirectUri)
@@ -65,9 +68,9 @@ public class MetaInstagramBusiness {
     public MetaConnection exchangeCode(String code) {
         requireConfigured(appId, "META_APP_ID");
         requireConfigured(appSecret, "META_APP_SECRET");
-        requireConfigured(redirectUri, "META_REDIRECT_URI");
+        requireConfigured(redirectUri, "FRONTEND_URL or LOCAL_FRONTEND_URL");
 
-        URI tokenUri = UriComponentsBuilder.fromUriString(GRAPH_ENDPOINT + "/oauth/access_token")
+        URI tokenUri = UriComponentsBuilder.fromUriString(graphUri + "/oauth/access_token")
                 .queryParam("client_id", appId)
                 .queryParam("client_secret", appSecret)
                 .queryParam("code", code)
@@ -77,7 +80,7 @@ public class MetaInstagramBusiness {
                 .toUri();
         String accessToken = requiredText(getJson(tokenUri), "access_token");
 
-        URI businessUri = UriComponentsBuilder.fromUriString(GRAPH_ENDPOINT + "/me")
+        URI businessUri = UriComponentsBuilder.fromUriString(graphUri + "/me")
                 .queryParam("fields", "client_business_id")
                 .queryParam("access_token", accessToken)
                 .build()
@@ -86,7 +89,7 @@ public class MetaInstagramBusiness {
         String businessId = requiredText(getJson(businessUri), "client_business_id");
 
         URI accountsUri = UriComponentsBuilder
-                .fromUriString(GRAPH_ENDPOINT + "/me/assigned_instagram_accounts")
+                .fromUriString(graphUri + "/me/assigned_instagram_accounts")
                 .queryParam("fields", "id,username")
                 .queryParam("access_token", accessToken)
                 .build()
