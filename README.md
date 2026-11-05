@@ -47,8 +47,10 @@ Google sign-in is already implemented using Spring Security's OAuth authorizatio
 1. In Google Cloud, add this authorized redirect URI to your OAuth client:
 
    ```text
-   Use the value of `LOCAL_FRONTEND_URL` followed by `/login/oauth2/code/google` (by default: `http://localhost:3000/login/oauth2/code/google`).
+   http://localhost:3000/login/oauth2/code/google
    ```
+
+   If `LOCAL_FRONTEND_URL` is different, register that URL followed by `/login/oauth2/code/google` instead.
 
 2. Provide `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in the root `.env` (or the IntelliJ run configuration's environment variables). Do not commit these credentials.
 3. In IntelliJ, run/debug the Spring Boot application with working directory `$PROJECT_DIR$/chimpchatapi` and active profile `local`. The backend loads the shared root `.env`.

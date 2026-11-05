@@ -3,6 +3,9 @@ package com.chimpchat.api.shared.config;
 import com.chimpchat.api.auth.business.GoogleAuthenticationSuccessHandler;
 import com.chimpchat.api.auth.business.AuthTokenFilter;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -10,9 +13,12 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Configuration
 public class SecurityConfiguration {
+    private static final Logger logger = LoggerFactory.getLogger(SecurityConfiguration.class);
+
     @Bean
     SecurityContextRepository securityContextRepository() {
         return new HttpSessionSecurityContextRepository();
@@ -23,7 +29,11 @@ public class SecurityConfiguration {
             HttpSecurity http,
             SecurityContextRepository securityContextRepository,
             GoogleAuthenticationSuccessHandler googleSuccessHandler,
+<<<<<<< Updated upstream
             AuthTokenFilter authTokenFilter) throws Exception {
+=======
+            @Value("${app.frontend-url}") String frontendUrl) throws Exception {
+>>>>>>> Stashed changes
         http
                 .securityContext(context -> context.securityContextRepository(securityContextRepository))
                 .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
@@ -50,8 +60,18 @@ public class SecurityConfiguration {
                         .anyRequest().authenticated())
                 .oauth2Login(oauth -> oauth
                         .successHandler(googleSuccessHandler)
-                        .failureHandler((request, response, exception) ->
-                                response.sendRedirect("/?auth_error=google_sign_in_failed")))
+                        .failureHandler((request, response, exception) -> {
+                            logger.warn("Google OAuth authentication failed: {}",
+                                    exception.getClass().getSimpleName());
+                            String redirectUrl = UriComponentsBuilder.fromUriString(frontendUrl)
+                                    .replacePath("/")
+                                    .replaceQuery(null)
+                                    .queryParam("auth_error", "google_sign_in_failed")
+                                    .build()
+                                    .encode()
+                                    .toUriString();
+                            response.sendRedirect(redirectUrl);
+                        }))
                 .logout(logout -> logout.disable())
                 .exceptionHandling(errors -> errors
                         .authenticationEntryPoint((request, response, exception) ->

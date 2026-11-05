@@ -5,7 +5,8 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 
-  --font-display: "Alga", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --font-display:
+    "Alga", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
   --font-body: "Alga", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
 
   --color-brand: #ffe01b;
@@ -222,8 +223,6 @@ input:focus-visible {
 
 .login-panel,
 .message-panel {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
   background: var(--color-white);
 }
 
@@ -238,20 +237,6 @@ input:focus-visible {
   width: min(100%, 25rem);
 }
 
-.card-icon {
-  display: grid;
-  width: 3rem;
-  height: 3rem;
-  place-items: center;
-  margin-bottom: 1.6rem;
-  border-radius: var(--radius-sm);
-  background: var(--color-brand);
-  color: var(--color-ink);
-  font-family: var(--font-display);
-  font-size: 1.45rem;
-  font-weight: 700;
-}
-
 .login-card .eyebrow,
 .message-panel .eyebrow {
   margin-bottom: 0.8rem;
@@ -260,7 +245,7 @@ input:focus-visible {
 .login-card h2,
 .message-panel h1,
 .section-heading h2 {
-  margin: 0;
+  margin: 1rem;
   font-family: var(--font-display);
   font-size: var(--text-heading);
   font-weight: 500;
@@ -290,7 +275,14 @@ input:focus-visible {
   font-weight: 700;
   text-align: center;
   text-decoration: none;
+<<<<<<< Updated upstream
   transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+=======
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+>>>>>>> Stashed changes
 }
 
 .button-primary {
