@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { authService } from '../../../shared/services/auth-service'
 import { channelService } from '../../../shared/services/channel-service'
 import { BrandHeader } from '../../../shared/components/BrandHeader'
+import { PlatformMark } from '../../../shared/components/PlatformMark'
 import { useToast } from '../../../shared/components/toast-context'
 
 export function DashboardPage({ bootstrap }) {
@@ -78,7 +79,7 @@ export function DashboardPage({ bootstrap }) {
         <div className="connected-list">
           {instagram.accounts.map((account) => (
             <div className="connected-account" key={account.id}>
-              <span className="channel-icon-wrap"><span className="channel-icon-text">◎</span></span>
+              <span className="channel-icon-wrap"><PlatformMark platform="INSTAGRAM" /></span>
               <div className="connected-account-info">
                 <strong>@{account.username}</strong>
                 <span>Instagram professional account</span>

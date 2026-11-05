@@ -20,6 +20,8 @@
   --color-success-surface: #edf5eb;
   --color-error: #8d2924;
   --color-error-surface: #fbefed;
+  --color-info: #55534b;
+  --color-warning: #8a6400;
   --color-neutral-surface: #f7f6f1;
 
   --text-xs: 0.75rem;
@@ -139,6 +141,17 @@ input:focus-visible {
   letter-spacing: 0.12em;
 }
 
+.header-caption {
+  max-width: min(45%, 18rem);
+  overflow: hidden;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  letter-spacing: 0.06em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .header-account {
   display: flex;
   align-items: center;
@@ -154,71 +167,29 @@ input:focus-visible {
   white-space: nowrap;
 }
 
-.entry-layout {
+.header-account .text-button {
+  padding: 0.5rem 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.header-account .text-button:hover:not(:disabled) {
+  border-color: var(--color-ink-soft);
+  background: var(--color-white);
+}
+
+.signin-layout {
   display: grid;
-  width: min(100%, 80rem);
+  width: min(100%, 34rem);
   min-height: 0;
   flex: 1;
-  grid-template-columns: minmax(0, 1fr) minmax(21rem, 0.82fr);
   align-items: center;
-  gap: clamp(2.5rem, 8vw, 8rem);
-  margin: 0 auto;
-  padding: clamp(1rem, 4vh, 3rem) 0;
-}
-
-.intro-panel {
-  max-width: 38rem;
-}
-
-.intro-panel .eyebrow {
-  margin-bottom: 1.4rem;
-}
-
-.intro-panel h1,
-.onboarding-heading h1,
-.dashboard-heading h1 {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: var(--text-display);
-  font-weight: 500;
-  letter-spacing: -0.065em;
-  line-height: 0.98;
-}
-
-.intro-panel h1 span {
-  text-decoration: underline;
-  text-decoration-color: var(--color-brand);
-  text-decoration-thickness: 0.12em;
-  text-underline-offset: 0.08em;
-}
-
-.intro-copy {
-  max-width: 33rem;
-  margin: 1.5rem 0 0;
-  color: var(--color-ink-soft);
-  font-size: var(--text-lg);
-  line-height: 1.65;
-}
-
-.benefit-list {
-  display: grid;
-  gap: 1rem;
-  margin-top: clamp(2rem, 5vh, 3.5rem);
-}
-
-.benefit {
-  display: flex;
-  align-items: baseline;
-  gap: 1rem;
-  color: var(--color-ink-soft);
-  font-size: var(--text-base);
-}
-
-.benefit-number {
-  color: var(--color-ink-muted);
-  font-size: var(--text-xs);
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  align-self: center;
+  padding: 2rem 0;
 }
 
 .login-panel,
@@ -228,13 +199,17 @@ input:focus-visible {
 
 .login-panel {
   display: grid;
-  min-height: 30rem;
+  min-height: 0;
   place-items: center;
-  padding: clamp(1.5rem, 4vw, 3.5rem);
+  padding: clamp(1.25rem, 4vw, 2rem);
 }
 
 .login-card {
   width: min(100%, 25rem);
+}
+
+.login-card > .eyebrow {
+  margin-bottom: 0.6rem;
 }
 
 .login-card .eyebrow,
@@ -242,10 +217,38 @@ input:focus-visible {
   margin-bottom: 0.8rem;
 }
 
+.login-card h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 2.6rem);
+  font-weight: 500;
+  letter-spacing: -0.055em;
+  line-height: 1.08;
+}
+
+.signin-copy {
+  margin: 0.65rem 0 1.5rem;
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.signin-loading {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
+
+.signin-hint {
+  margin: 0.75rem 0 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-xs);
+}
+
 .login-card h2,
 .message-panel h1,
 .section-heading h2 {
-  margin: 1rem;
+  margin: 1rem 0;
   font-family: var(--font-display);
   font-size: var(--text-heading);
   font-weight: 500;
@@ -275,14 +278,10 @@ input:focus-visible {
   font-weight: 700;
   text-align: center;
   text-decoration: none;
-<<<<<<< Updated upstream
-  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
-=======
   transition:
     background-color 160ms ease,
     border-color 160ms ease,
     color 160ms ease;
->>>>>>> Stashed changes
 }
 
 .button-primary {
@@ -324,10 +323,18 @@ input:focus-visible {
   margin-bottom: 1rem;
 }
 
-.google-mark {
-  font-family: Arial, sans-serif;
-  font-size: 1.1rem;
-  font-weight: 700;
+.google-mark,
+.channel-icon-wrap .platform-mark {
+  display: block;
+  width: 1.4rem;
+  height: 1.4rem;
+  flex: 0 0 auto;
+}
+
+.google-mark .platform-mark {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--color-ink);
 }
 
 .email-form {
@@ -416,49 +423,73 @@ input:focus-visible {
 .toast {
   position: fixed;
   z-index: 20;
-  right: clamp(1rem, 3vw, 2rem);
-  bottom: clamp(1rem, 3vw, 2rem);
+  top: max(1rem, env(safe-area-inset-top));
+  left: 50%;
   display: flex;
-  width: min(25rem, calc(100vw - 2rem));
+  width: max-content;
+  max-width: calc(100vw - 2rem);
+  min-height: 2.85rem;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.9rem 1rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-white);
-  color: var(--color-ink);
+  gap: 0.65rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid var(--color-ink);
+  border-radius: var(--radius-pill);
+  background: var(--color-ink);
+  color: var(--color-white);
   font-size: var(--text-sm);
   line-height: 1.4;
+  transform: translateX(-50%);
   animation: toast-in 180ms ease-out;
 }
 
 .toast-indicator {
-  width: 0.6rem;
-  height: 0.6rem;
+  display: grid;
+  width: 1.1rem;
+  height: 1.1rem;
   flex: 0 0 auto;
+  place-items: center;
+  border: 1.5px solid var(--color-brand);
   border-radius: 50%;
-  background: var(--color-success);
+  color: var(--color-brand);
+  font-family: Arial, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
 }
 
-.toast-error {
-  border-color: var(--color-error);
-  background: var(--color-error-surface);
-  color: var(--color-error);
+.toast-success .toast-indicator::before {
+  content: "✓";
 }
 
-.toast-error .toast-indicator {
-  background: var(--color-error);
+.toast-error .toast-indicator::before,
+.toast-warning .toast-indicator::before {
+  content: "!";
+}
+
+.toast-info .toast-indicator::before {
+  content: "i";
+}
+
+.toast > span:nth-child(2) {
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
 }
 
 .toast-dismiss {
   margin-left: auto;
-  padding: 0.15rem 0.3rem;
+  padding: 0.15rem;
   border: 0;
   background: transparent;
-  color: currentColor;
+  color: var(--color-white);
   cursor: pointer;
-  font-size: 1.25rem;
+  font-family: Arial, sans-serif;
+  font-size: 1.15rem;
   line-height: 1;
+}
+
+.toast-dismiss:hover {
+  color: var(--color-brand);
 }
 
 .center-layout {
@@ -503,6 +534,13 @@ input:focus-visible {
   padding: clamp(1rem, 3.5vh, 2.5rem) 0;
 }
 
+.channels-layout {
+  display: flex;
+  width: min(100%, 64rem);
+  flex-direction: column;
+  justify-content: center;
+}
+
 .onboarding-heading,
 .dashboard-heading {
   max-width: 48rem;
@@ -515,36 +553,63 @@ input:focus-visible {
 
 .onboarding-heading h1,
 .dashboard-heading h1 {
+  margin: 0;
+  font-family: var(--font-display);
   font-size: clamp(2.7rem, 4.5vw, 4.25rem);
+  font-weight: 500;
+  letter-spacing: -0.065em;
+  line-height: 1;
+}
+
+.onboarding-heading h1 {
+  font-size: clamp(2.4rem, 4vw, 3.25rem);
+}
+
+.intro-copy {
+  max-width: 33rem;
+  margin: 1.5rem 0 0;
+  color: var(--color-ink-soft);
+  font-size: var(--text-lg);
+  line-height: 1.65;
 }
 
 .onboarding-heading .intro-copy,
 .dashboard-heading .intro-copy {
   max-width: 45rem;
-  margin-top: 0.9rem;
+  margin-top: 0.65rem;
   font-size: var(--text-base);
 }
 
-.channel-grid {
+.channel-options {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
-  margin-top: clamp(1.5rem, 4vh, 2.5rem);
+  margin-top: clamp(1.5rem, 4vh, 2rem);
 }
 
 .channel-card {
   display: flex;
-  min-height: 16.5rem;
+  min-height: 16rem;
   flex-direction: column;
   align-items: flex-start;
-  padding: clamp(1rem, 2vw, 1.5rem);
+  padding: clamp(1.25rem, 3vw, 2rem);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-white);
 }
 
 .channel-card-active {
-  border-color: var(--color-ink);
+  border-color: var(--color-brand-hover);
+}
+
+.channel-card-future {
+  color: var(--color-ink-muted);
+}
+
+.channel-card-future .channel-icon-wrap {
+  border: 1px solid var(--color-border);
+  background: var(--color-white);
+  color: var(--color-ink-soft);
 }
 
 .channel-card-top {
@@ -566,22 +631,24 @@ input:focus-visible {
   color: var(--color-ink);
 }
 
-.channel-icon {
+.platform-mark {
   width: 1.4rem;
   height: 1.4rem;
+  fill: none;
   stroke: currentColor;
   stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.icon-dot {
+.platform-mark-dot {
   fill: currentColor;
   stroke: none;
 }
 
-.channel-icon-text {
-  font-family: var(--font-display);
-  font-size: 1.3rem;
-  font-weight: 700;
+.platform-mark-filled {
+  fill: currentColor;
+  stroke: none;
 }
 
 .availability {
@@ -615,18 +682,8 @@ input:focus-visible {
   margin-top: auto;
 }
 
-.channel-card-future {
-  color: var(--color-ink-muted);
-}
-
-.channel-card-future .channel-icon-wrap {
-  border: 1px solid var(--color-border);
-  background: var(--color-white);
-  color: var(--color-ink-soft);
-}
-
 .channel-card .channel-help {
-  margin: 0.6rem 0 0;
+  margin: 0.75rem 0 0;
   color: var(--color-error);
   font-size: var(--text-xs);
 }
@@ -812,11 +869,11 @@ input:focus-visible {
 @keyframes toast-in {
   from {
     opacity: 0;
-    transform: translateY(0.5rem);
+    transform: translate(-50%, -0.5rem);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate(-50%, 0);
   }
 }
 
@@ -826,17 +883,12 @@ input:focus-visible {
     padding-left: 1.5rem;
   }
 
-  .entry-layout {
-    gap: 2rem;
-    grid-template-columns: minmax(0, 1fr) minmax(19rem, 0.9fr);
-  }
-
-  .intro-panel h1 {
-    font-size: clamp(3rem, 7vw, 4.5rem);
+  .channel-options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .channel-card {
-    min-height: 17rem;
+    min-height: 16rem;
     padding: 1rem;
   }
 }
@@ -862,60 +914,16 @@ input:focus-visible {
     display: none;
   }
 
-  .entry-layout {
-    grid-template-columns: 1fr;
-    align-content: center;
-    gap: 1rem;
+  .signin-layout {
     padding: 0.75rem 0;
   }
 
-  .intro-panel {
-    justify-self: center;
+  .signin-layout .login-panel {
+    padding: 1rem clamp(0.5rem, 4vw, 1.25rem);
   }
 
-  .intro-panel .eyebrow {
-    margin-bottom: 0.5rem;
-    font-size: 0.625rem;
-  }
-
-  .intro-panel h1 {
-    max-width: 33rem;
-    font-size: clamp(2.35rem, 9vw, 3.5rem);
-  }
-
-  .intro-copy,
-  .benefit-list {
-    display: none;
-  }
-
-  .login-panel {
-    min-height: 0;
-    padding: 1.25rem clamp(1.25rem, 7vw, 2rem);
-  }
-
-  .card-icon {
-    width: 2.4rem;
-    height: 2.4rem;
-    margin-bottom: 0.85rem;
-  }
-
-  .login-card .eyebrow {
-    margin-bottom: 0.5rem;
-    font-size: 0.625rem;
-  }
-
-  .login-card h2 {
-    font-size: clamp(1.8rem, 7vw, 2.25rem);
-  }
-
-  .login-copy {
-    margin: 0.5rem 0 1rem;
-    font-size: var(--text-sm);
-  }
-
-  .privacy-note {
-    margin-top: 0.9rem;
-    padding-top: 0.75rem;
+  .login-card h1 {
+    font-size: clamp(1.9rem, 7vw, 2.4rem);
   }
 
   .onboarding-layout,
@@ -929,15 +937,24 @@ input:focus-visible {
     font-size: clamp(2.4rem, 9vw, 3.4rem);
   }
 
-  .channel-grid {
+  .onboarding-heading h1 {
+    font-size: clamp(2.2rem, 8vw, 3rem);
+  }
+
+  .onboarding-heading .intro-copy {
+    margin-top: 0.5rem;
+    font-size: var(--text-sm);
+  }
+
+  .channel-options {
     grid-template-columns: 1fr;
-    gap: 0.75rem;
+    gap: 1rem;
     margin-top: 1.25rem;
   }
 
   .channel-card {
     min-height: 0;
-    padding: 1rem;
+    padding: 1.25rem;
   }
 
   .channel-card > p {
@@ -948,15 +965,7 @@ input:focus-visible {
     min-height: 2.75rem;
   }
 
-  .channel-card-future {
-    min-height: 8rem;
-  }
-
   .channel-card-future > p {
-    display: none;
-  }
-
-  .channel-card-future .button {
     display: none;
   }
 
@@ -991,24 +1000,14 @@ input:focus-visible {
 }
 
 @media (max-width: 700px) and (max-height: 600px) {
-  .intro-panel {
-    display: none;
-  }
-
-  .entry-layout {
-    grid-template-columns: 1fr;
+  .signin-layout {
     padding: 0.5rem 0;
   }
 
-  .login-panel {
+  .signin-layout .login-panel {
     width: min(100%, 32rem);
     justify-self: center;
     padding: 0.9rem;
-  }
-
-  .login-copy,
-  .privacy-note {
-    display: none;
   }
 }
 
@@ -1017,25 +1016,11 @@ input:focus-visible {
     min-height: 4rem;
   }
 
-  .entry-layout,
+  .signin-layout,
   .onboarding-layout,
   .dashboard-layout {
     padding-top: 0.75rem;
     padding-bottom: 0.75rem;
-  }
-
-  .intro-panel h1 {
-    font-size: clamp(2.8rem, 5vw, 4rem);
-  }
-
-  .intro-copy {
-    margin-top: 1rem;
-    font-size: var(--text-base);
-  }
-
-  .benefit-list {
-    gap: 0.65rem;
-    margin-top: 1.5rem;
   }
 
   .login-panel {

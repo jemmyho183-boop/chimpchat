@@ -1,8 +1,8 @@
-import { apiRequest } from '../api/client'
+import { apiGet } from '../api/client'
 
 export class AppService {
   getBootstrap() {
-    return apiRequest('/api/v1/app/bootstrap')
+    return apiGet('/api/v1/app/bootstrap')
   }
 }
 

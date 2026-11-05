@@ -1,29 +1,20 @@
-import { apiRequest } from '../api/client'
+import { apiGet, apiPost } from '../api/client'
 
 export class AuthService {
   getOptions() {
-    return apiRequest('/api/v1/auth/options')
+    return apiGet('/api/v1/auth/options')
   }
 
   requestMagicLink(email) {
-    return apiRequest('/api/auth/magic-link/request', {
-      method: 'POST',
-      body: { email },
-    })
+    return apiPost('/api/v1/auth/email-links', { email })
   }
 
   verifyMagicLink(token) {
-    return apiRequest('/api/auth/magic-link/verify', {
-      method: 'POST',
-      body: { token },
-    })
+    return apiPost('/api/v1/auth/email-links/consume', { token })
   }
 
   logout() {
-    return apiRequest('/api/v1/auth/logout', {
-      method: 'POST',
-      body: {},
-    })
+    return apiPost('/api/v1/auth/logout', {})
   }
 }
 

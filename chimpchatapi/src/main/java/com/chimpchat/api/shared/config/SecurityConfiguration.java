@@ -29,11 +29,8 @@ public class SecurityConfiguration {
             HttpSecurity http,
             SecurityContextRepository securityContextRepository,
             GoogleAuthenticationSuccessHandler googleSuccessHandler,
-<<<<<<< Updated upstream
-            AuthTokenFilter authTokenFilter) throws Exception {
-=======
+            AuthTokenFilter authTokenFilter,
             @Value("${app.frontend-url}") String frontendUrl) throws Exception {
->>>>>>> Stashed changes
         http
                 .securityContext(context -> context.securityContextRepository(securityContextRepository))
                 .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))

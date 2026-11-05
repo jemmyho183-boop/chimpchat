@@ -21,26 +21,18 @@ public class GoogleAuthenticationSuccessHandler implements AuthenticationSuccess
 
     private final GoogleIdentityBusiness identityBusiness;
     private final LoginSessionBusiness loginSessionBusiness;
-<<<<<<< Updated upstream
     private final AuthTokenBusiness tokenBusiness;
-=======
     private final String frontendUrl;
->>>>>>> Stashed changes
 
     public GoogleAuthenticationSuccessHandler(
             GoogleIdentityBusiness identityBusiness,
             LoginSessionBusiness loginSessionBusiness,
-<<<<<<< Updated upstream
-            AuthTokenBusiness tokenBusiness) {
-        this.identityBusiness = identityBusiness;
-        this.loginSessionBusiness = loginSessionBusiness;
-        this.tokenBusiness = tokenBusiness;
-=======
+            AuthTokenBusiness tokenBusiness,
             @Value("${app.frontend-url}") String frontendUrl) {
         this.identityBusiness = identityBusiness;
         this.loginSessionBusiness = loginSessionBusiness;
+        this.tokenBusiness = tokenBusiness;
         this.frontendUrl = frontendUrl;
->>>>>>> Stashed changes
     }
 
     @Override
@@ -56,12 +48,8 @@ public class GoogleAuthenticationSuccessHandler implements AuthenticationSuccess
         try {
             UserEntity user = identityBusiness.resolve(googleUser);
             loginSessionBusiness.establish(user, request, response);
-<<<<<<< Updated upstream
             tokenBusiness.issue(user, response);
-            response.sendRedirect("/");
-=======
             response.sendRedirect(frontendRedirect(null));
->>>>>>> Stashed changes
         } catch (AuthException exception) {
             logger.info("Google sign-in rejected: {}", exception.getCode());
             response.sendRedirect(frontendRedirect(exception.getCode()));
