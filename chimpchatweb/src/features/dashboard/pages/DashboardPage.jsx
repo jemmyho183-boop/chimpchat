@@ -1,25 +1,39 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { apiDelete, apiPost } from '../../../shared/api/client'
+import { authService } from '../../../shared/services/auth-service'
+import { channelService } from '../../../shared/services/channel-service'
 import { BrandHeader } from '../../../shared/components/BrandHeader'
+import { useToast } from '../../../shared/components/toast-context'
 
 export function DashboardPage({ bootstrap }) {
   const [params] = useSearchParams()
   const [disconnecting, setDisconnecting] = useState(false)
   const [error, setError] = useState('')
+  const { notify } = useToast()
   const navigate = useNavigate()
   const instagram = bootstrap.channels.find((channel) => channel.provider === 'INSTAGRAM')
   const justConnected = params.get('channel_connected') === 'instagram'
+
+  if (!instagram) {
+    return <main className="loading-page error-page">
+      <p className="eyebrow">WORKSPACE SETUP</p>
+      <h1>We could not load your channel.</h1>
+      <p className="intro-copy">Refresh the page to try again. If the problem continues, contact your workspace administrator.</p>
+      <button className="button button-primary" type="button" onClick={() => window.location.reload()}>Refresh</button>
+    </main>
+  }
 
   async function disconnectInstagram() {
     if (!instagram?.connectionId || !window.confirm('Disconnect Instagram from this workspace?')) return
     setDisconnecting(true)
     setError('')
     try {
-      await apiDelete(`/api/v1/channels/${instagram.connectionId}`)
+      await channelService.disconnect(instagram.connectionId)
+      notify('Instagram has been disconnected from your workspace.')
       navigate('/connect-channels', { replace: true })
     } catch (requestError) {
       setError(requestError.message)
+      notify(requestError.message, 'error')
     } finally {
       setDisconnecting(false)
     }
@@ -27,10 +41,11 @@ export function DashboardPage({ bootstrap }) {
 
   async function signOut() {
     try {
-      await apiPost('/api/v1/auth/logout', {})
+      await authService.logout()
       navigate('/signin', { replace: true })
     } catch (requestError) {
       setError(requestError.message)
+      notify(requestError.message, 'error')
     }
   }
 

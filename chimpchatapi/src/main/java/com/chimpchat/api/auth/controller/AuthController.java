@@ -1,6 +1,8 @@
 package com.chimpchat.api.auth.controller;
 
 import com.chimpchat.api.auth.business.AppUserPrincipal;
+import com.chimpchat.api.auth.business.AuthException;
+import com.chimpchat.api.auth.business.AuthTokenBusiness;
 import com.chimpchat.api.auth.business.EmailLinkBusiness;
 import com.chimpchat.api.auth.business.LoginSessionBusiness;
 import com.chimpchat.api.auth.dto.AuthOptionsResponseDto;
@@ -27,18 +29,21 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping({ "/api/auth", "/api/v1/auth" })
 public class AuthController {
     private final EmailLinkBusiness emailLinkBusiness;
     private final LoginSessionBusiness loginSessionBusiness;
+    private final AuthTokenBusiness tokenBusiness;
     private final boolean googleEnabled;
 
     public AuthController(
             EmailLinkBusiness emailLinkBusiness,
             LoginSessionBusiness loginSessionBusiness,
+            AuthTokenBusiness tokenBusiness,
             ClientRegistrationRepository clientRegistrationRepository) {
         this.emailLinkBusiness = emailLinkBusiness;
         this.loginSessionBusiness = loginSessionBusiness;
+        this.tokenBusiness = tokenBusiness;
         this.googleEnabled = clientRegistrationRepository.findByRegistrationId("google") != null;
     }
 
@@ -52,8 +57,16 @@ public class AuthController {
         return new AuthOptionsResponseDto(googleEnabled, emailLinkBusiness.isEnabled());
     }
 
+    @GetMapping("/google/start")
+    public void startGoogleAuthentication(HttpServletResponse response) throws java.io.IOException {
+        if (!googleEnabled) {
+            response.sendRedirect("/?auth_error=google_sign_in_unavailable");
+            return;
+        }
+        response.sendRedirect("/oauth2/authorization/google");
+    }
 
-    @PostMapping("/email-links")
+    @PostMapping({ "/magic-link/request", "/email-links" })
     public EmailLinkResponseDto requestEmailLink(
             @Valid @RequestBody EmailLinkRequestDto request,
             HttpServletRequest servletRequest) {
@@ -62,12 +75,27 @@ public class AuthController {
                 "If sign-in by email is available, a one-time link will arrive shortly.");
     }
 
-    @PostMapping("/email-links/consume")
+    @PostMapping({ "/magic-link/verify", "/email-links/consume" })
     public CurrentUserResponseDto consumeEmailLink(
             @Valid @RequestBody ConsumeEmailLinkRequestDto request,
             HttpServletRequest servletRequest,
             HttpServletResponse servletResponse) {
         UserEntity user = emailLinkBusiness.consume(request.token());
+        loginSessionBusiness.establish(user, servletRequest, servletResponse);
+        tokenBusiness.issue(user, servletResponse);
+        return new CurrentUserResponseDto(user.getId(), user.getEmail());
+    }
+
+    @PostMapping("/refresh")
+    public CurrentUserResponseDto refresh(
+            HttpServletRequest servletRequest,
+            HttpServletResponse servletResponse) {
+        String rawRefreshToken = cookie(servletRequest, AuthTokenBusiness.REFRESH_COOKIE);
+        if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
+            throw new AuthException(HttpStatus.UNAUTHORIZED, "refresh_token_expired",
+                    "Your session has expired. Please sign in again.");
+        }
+        UserEntity user = tokenBusiness.refresh(rawRefreshToken, servletResponse);
         loginSessionBusiness.establish(user, servletRequest, servletResponse);
         return new CurrentUserResponseDto(user.getId(), user.getEmail());
     }
@@ -81,8 +109,25 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public void logout(HttpSession session) {
+    public void logout(
+            HttpServletRequest request,
+            HttpSession session,
+            HttpServletResponse response) {
+        tokenBusiness.revoke(cookie(request, AuthTokenBusiness.REFRESH_COOKIE));
         session.invalidate();
         SecurityContextHolder.clearContext();
+        tokenBusiness.clear(response);
+    }
+
+    private String cookie(HttpServletRequest request, String name) {
+        if (request.getCookies() == null) {
+            return null;
+        }
+        for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
+            if (name.equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+        return null;
     }
 }

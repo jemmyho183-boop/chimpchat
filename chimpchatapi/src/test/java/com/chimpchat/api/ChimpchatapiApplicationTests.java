@@ -41,6 +41,14 @@ class ChimpchatapiApplicationTests {
 	}
 
 	@Test
+	void googleStartRouteIsPublicAndReportsDisabledConfiguration() throws Exception {
+		mockMvc.perform(get("/api/auth/google/start"))
+				.andExpect(status().is3xxRedirection())
+				.andExpect(result -> assertTrue(
+						result.getResponse().getRedirectedUrl().contains("auth_error=google_sign_in_unavailable")));
+	}
+
+	@Test
 	void appAndChannelRoutesRequireAuthentication() throws Exception {
 		mockMvc.perform(get("/api/v1/app/bootstrap"))
 				.andExpect(status().isUnauthorized());

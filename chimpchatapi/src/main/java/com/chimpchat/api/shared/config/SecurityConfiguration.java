@@ -1,6 +1,7 @@
 package com.chimpchat.api.shared.config;
 
 import com.chimpchat.api.auth.business.GoogleAuthenticationSuccessHandler;
+import com.chimpchat.api.auth.business.AuthTokenFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,7 +22,8 @@ public class SecurityConfiguration {
     SecurityFilterChain applicationSecurity(
             HttpSecurity http,
             SecurityContextRepository securityContextRepository,
-            GoogleAuthenticationSuccessHandler googleSuccessHandler) throws Exception {
+            GoogleAuthenticationSuccessHandler googleSuccessHandler,
+            AuthTokenFilter authTokenFilter) throws Exception {
         http
                 .securityContext(context -> context.securityContextRepository(securityContextRepository))
                 .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
@@ -30,8 +32,17 @@ public class SecurityConfiguration {
                                 "/api/health",
                                 "/api/v1/auth/csrf",
                                 "/api/v1/auth/options",
+                                "/api/auth/csrf",
+                                "/api/auth/options",
+                                "/api/auth/google/start",
+                                "/api/v1/auth/google/start",
                                 "/api/v1/auth/email-links",
                                 "/api/v1/auth/email-links/consume",
+                                "/api/auth/magic-link/request",
+                                "/api/auth/magic-link/verify",
+                                "/api/v1/auth/refresh",
+                                "/actuator/health",
+                                "/actuator/info",
                                 "/oauth2/**",
                                 "/login/oauth2/**",
                                 "/error")
@@ -46,6 +57,8 @@ public class SecurityConfiguration {
                         .authenticationEntryPoint((request, response, exception) ->
                                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED)))
                 .sessionManagement(session -> session.sessionFixation(fixation -> fixation.migrateSession()));
+        http.addFilterBefore(authTokenFilter,
+                org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 }

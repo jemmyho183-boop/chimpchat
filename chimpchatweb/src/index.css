@@ -19,6 +19,7 @@
   --color-success-surface: #edf5eb;
   --color-error: #8d2924;
   --color-error-surface: #fbefed;
+  --color-neutral-surface: #f7f6f1;
 
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
@@ -289,7 +290,7 @@ input:focus-visible {
   font-weight: 700;
   text-align: center;
   text-decoration: none;
-  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
 }
 
 .button-primary {
@@ -299,6 +300,7 @@ input:focus-visible {
 
 .button-primary:hover:not(:disabled) {
   background: var(--color-brand-hover);
+  transform: translateY(-1px);
 }
 
 .button-secondary {
@@ -309,11 +311,21 @@ input:focus-visible {
 
 .button-secondary:hover:not(:disabled) {
   border-color: var(--color-ink);
+  background: var(--color-neutral-surface);
 }
 
+.button-disabled,
 .button:disabled {
+  border-color: var(--color-border);
+  background: var(--color-neutral-surface);
+  color: var(--color-ink-muted);
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+.button-disabled:hover,
+.button:disabled:hover {
+  transform: none;
 }
 
 .google-button {
@@ -402,6 +414,59 @@ input:focus-visible {
 .notice-error {
   background: var(--color-error-surface);
   color: var(--color-error);
+}
+
+.notice-success {
+  background: var(--color-success-surface);
+  color: var(--color-success);
+}
+
+.toast {
+  position: fixed;
+  z-index: 20;
+  right: clamp(1rem, 3vw, 2rem);
+  bottom: clamp(1rem, 3vw, 2rem);
+  display: flex;
+  width: min(25rem, calc(100vw - 2rem));
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  color: var(--color-ink);
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  animation: toast-in 180ms ease-out;
+}
+
+.toast-indicator {
+  width: 0.6rem;
+  height: 0.6rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--color-success);
+}
+
+.toast-error {
+  border-color: var(--color-error);
+  background: var(--color-error-surface);
+  color: var(--color-error);
+}
+
+.toast-error .toast-indicator {
+  background: var(--color-error);
+}
+
+.toast-dismiss {
+  margin-left: auto;
+  padding: 0.15rem 0.3rem;
+  border: 0;
+  background: transparent;
+  color: currentColor;
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
 }
 
 .center-layout {
@@ -749,6 +814,17 @@ input:focus-visible {
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

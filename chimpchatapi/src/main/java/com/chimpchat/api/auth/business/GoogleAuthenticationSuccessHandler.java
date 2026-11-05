@@ -19,12 +19,15 @@ public class GoogleAuthenticationSuccessHandler implements AuthenticationSuccess
 
     private final GoogleIdentityBusiness identityBusiness;
     private final LoginSessionBusiness loginSessionBusiness;
+    private final AuthTokenBusiness tokenBusiness;
 
     public GoogleAuthenticationSuccessHandler(
             GoogleIdentityBusiness identityBusiness,
-            LoginSessionBusiness loginSessionBusiness) {
+            LoginSessionBusiness loginSessionBusiness,
+            AuthTokenBusiness tokenBusiness) {
         this.identityBusiness = identityBusiness;
         this.loginSessionBusiness = loginSessionBusiness;
+        this.tokenBusiness = tokenBusiness;
     }
 
     @Override
@@ -40,6 +43,7 @@ public class GoogleAuthenticationSuccessHandler implements AuthenticationSuccess
         try {
             UserEntity user = identityBusiness.resolve(googleUser);
             loginSessionBusiness.establish(user, request, response);
+            tokenBusiness.issue(user, response);
             response.sendRedirect("/");
         } catch (AuthException exception) {
             logger.info("Google sign-in rejected: {}", exception.getCode());

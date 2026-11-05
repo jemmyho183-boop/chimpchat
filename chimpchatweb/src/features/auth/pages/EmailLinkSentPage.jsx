@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { apiPost } from '../../../shared/api/client'
+import { authService } from '../../../shared/services/auth-service'
 import { BrandHeader } from '../../../shared/components/BrandHeader'
+import { Button } from '../../../shared/components/Button'
 
 export function EmailLinkSentPage() {
   const [params] = useSearchParams()
@@ -13,7 +14,7 @@ export function EmailLinkSentPage() {
     setSending(true)
     setMessage('')
     try {
-      await apiPost('/api/v1/auth/email-links', { email })
+      await authService.requestMagicLink(email)
       setMessage('If email sign-in is available, a fresh link will arrive shortly.')
     } catch (error) {
       setMessage(error.message)
@@ -30,9 +31,9 @@ export function EmailLinkSentPage() {
         <p className="eyebrow">ONE LINK, THEN YOU’RE IN</p>
         <h1>Check your email.</h1>
         <p className="message-copy">We sent a secure sign-in link to <strong>{email || 'your email address'}</strong>. It expires in 15 minutes and works once.</p>
-        <button className="button button-primary" type="button" onClick={resend} disabled={!email || sending}>
+        <Button type="button" onClick={resend} disabled={!email || sending}>
           {sending ? 'Sending…' : 'Send a new link'}
-        </button>
+        </Button>
         {message && <p className="inline-notice" role="status">{message}</p>}
         <Link className="text-link" to="/signin">Use a different email</Link>
       </section>
