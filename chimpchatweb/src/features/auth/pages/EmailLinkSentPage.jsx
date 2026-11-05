@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { apiPost } from '../../../shared/api/client'
+import { authService } from '../../../shared/services/auth-service'
 import { BrandHeader } from '../../../shared/components/BrandHeader'
 import { Button } from '../../../shared/components/Button'
 
@@ -14,7 +14,7 @@ export function EmailLinkSentPage() {
     setSending(true)
     setMessage('')
     try {
-      await apiPost('/api/v1/auth/email-links', { email })
+      await authService.requestMagicLink(email)
       setMessage('If email sign-in is available, a fresh link will arrive shortly.')
     } catch (error) {
       setMessage(error.message)

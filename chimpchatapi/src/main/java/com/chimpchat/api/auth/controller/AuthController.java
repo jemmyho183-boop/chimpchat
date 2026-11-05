@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping({ "/api/auth", "/api/v1/auth" })
 public class AuthController {
     private final EmailLinkBusiness emailLinkBusiness;
     private final LoginSessionBusiness loginSessionBusiness;
@@ -57,8 +57,16 @@ public class AuthController {
         return new AuthOptionsResponseDto(googleEnabled, emailLinkBusiness.isEnabled());
     }
 
+    @GetMapping("/google/start")
+    public void startGoogleAuthentication(HttpServletResponse response) throws java.io.IOException {
+        if (!googleEnabled) {
+            response.sendRedirect("/?auth_error=google_sign_in_unavailable");
+            return;
+        }
+        response.sendRedirect("/oauth2/authorization/google");
+    }
 
-    @PostMapping("/email-links")
+    @PostMapping({ "/magic-link/request", "/email-links" })
     public EmailLinkResponseDto requestEmailLink(
             @Valid @RequestBody EmailLinkRequestDto request,
             HttpServletRequest servletRequest) {
@@ -67,7 +75,7 @@ public class AuthController {
                 "If sign-in by email is available, a one-time link will arrive shortly.");
     }
 
-    @PostMapping("/email-links/consume")
+    @PostMapping({ "/magic-link/verify", "/email-links/consume" })
     public CurrentUserResponseDto consumeEmailLink(
             @Valid @RequestBody ConsumeEmailLinkRequestDto request,
             HttpServletRequest servletRequest,

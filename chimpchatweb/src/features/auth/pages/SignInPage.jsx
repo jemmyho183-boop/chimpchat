@@ -1,24 +1,26 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { apiGet, apiPost } from '../../../shared/api/client'
+import { authService } from '../../../shared/services/auth-service'
 import { BrandHeader } from '../../../shared/components/BrandHeader'
 import { Button } from '../../../shared/components/Button'
 
 const authErrors = {
   identity_link_required: 'This email already has an account. Sign in with your email to continue.',
   google_sign_in_failed: 'Google sign-in could not be completed. Please try again.',
+  google_sign_in_unavailable: 'Google sign-in is temporarily unavailable. Please try again later.',
 }
 
 export function SignInPage() {
   const [options, setOptions] = useState(null)
   const [email, setEmail] = useState('')
+  const [emailMode, setEmailMode] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
 
   useEffect(() => {
-    apiGet('/api/v1/auth/options')
+    authService.getOptions()
       .then(setOptions)
       .catch(() => setError('Sign-in options are temporarily unavailable. Please reload the page.'))
   }, [])
@@ -28,7 +30,7 @@ export function SignInPage() {
     setError('')
     setBusy(true)
     try {
-      await apiPost('/api/v1/auth/email-links', { email })
+      await authService.requestMagicLink(email)
       navigate(`/email-sent?email=${encodeURIComponent(email.trim())}`)
     } catch (requestError) {
       setError(requestError.message)
@@ -59,15 +61,22 @@ export function SignInPage() {
           <p className="login-copy">Sign in or create your account to connect your channels.</p>
 
           {options?.googleEnabled && (
-            <Button as="a" variant="secondary" className="google-button" href="/oauth2/authorization/google">
+            <Button as="a" variant="secondary" className="google-button" href="/api/auth/google/start">
               <span className="google-mark" aria-hidden="true">G</span>
               <span>Continue with Google</span>
             </Button>
           )}
 
-          {options?.googleEnabled && options?.emailEnabled && <div className="separator"><span>or continue with email</span></div>}
+          {options?.googleEnabled && options?.emailEnabled && <div className="separator"><span>or</span></div>}
 
-          <form className="email-form" onSubmit={submitEmail}>
+          {options?.emailEnabled && !emailMode && (
+            <Button type="button" onClick={() => setEmailMode(true)}>
+              Continue with email
+              <span className="button-arrow" aria-hidden="true">↗</span>
+            </Button>
+          )}
+
+          {options?.emailEnabled && emailMode && <form className="email-form" onSubmit={submitEmail}>
             <label htmlFor="signin-email">Email address</label>
             <input
               id="signin-email"
@@ -80,11 +89,12 @@ export function SignInPage() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />
-            <Button type="submit" disabled={!options?.emailEnabled || busy}>
-              {busy ? 'Sending sign-in link…' : 'Continue with email'}
+            <Button type="submit" disabled={busy}>
+              {busy ? 'Sending sign-in link…' : 'Send me a sign-in link'}
               {!busy && <span className="button-arrow" aria-hidden="true">↗</span>}
             </Button>
-          </form>
+            <button type="button" className="text-link" onClick={() => setEmailMode(false)}>Back to sign-in options</button>
+          </form>}
 
           {options && !options.emailEnabled && !options.googleEnabled && (
             <p className="inline-notice" role="status">Sign-in is being set up. Add Google OAuth or email delivery credentials to enable access.</p>

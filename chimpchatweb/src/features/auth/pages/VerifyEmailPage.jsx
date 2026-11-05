@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { apiPost } from '../../../shared/api/client'
+import { authService } from '../../../shared/services/auth-service'
 import { BrandHeader } from '../../../shared/components/BrandHeader'
 import { Button } from '../../../shared/components/Button'
 
@@ -15,7 +15,7 @@ export function VerifyEmailPage() {
     setBusy(true)
     setError('')
     try {
-      await apiPost('/api/v1/auth/email-links/consume', { token })
+      await authService.verifyMagicLink(token)
       navigate('/', { replace: true })
     } catch (requestError) {
       setError(requestError.message)

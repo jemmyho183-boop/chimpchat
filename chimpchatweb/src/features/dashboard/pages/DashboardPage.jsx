@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { apiDelete, apiPost } from '../../../shared/api/client'
+import { authService } from '../../../shared/services/auth-service'
+import { channelService } from '../../../shared/services/channel-service'
 import { BrandHeader } from '../../../shared/components/BrandHeader'
 import { useToast } from '../../../shared/components/toast-context'
 
@@ -27,7 +28,7 @@ export function DashboardPage({ bootstrap }) {
     setDisconnecting(true)
     setError('')
     try {
-      await apiDelete(`/api/v1/channels/${instagram.connectionId}`)
+      await channelService.disconnect(instagram.connectionId)
       notify('Instagram has been disconnected from your workspace.')
       navigate('/connect-channels', { replace: true })
     } catch (requestError) {
@@ -40,7 +41,7 @@ export function DashboardPage({ bootstrap }) {
 
   async function signOut() {
     try {
-      await apiPost('/api/v1/auth/logout', {})
+      await authService.logout()
       navigate('/signin', { replace: true })
     } catch (requestError) {
       setError(requestError.message)

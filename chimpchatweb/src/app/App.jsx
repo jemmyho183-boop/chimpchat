@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
-import { apiGet, ApiError } from '../shared/api/client'
+import { ApiError } from '../shared/api/client'
+import { appService } from '../shared/services/app-service'
 import { ConnectChannelsPage } from '../features/channels/pages/ConnectChannelsPage'
 import { DashboardPage } from '../features/dashboard/pages/DashboardPage'
 import { EmailLinkSentPage } from '../features/auth/pages/EmailLinkSentPage'
@@ -29,7 +30,7 @@ function useBootstrap() {
 
   useEffect(() => {
     let active = true
-    apiGet('/api/v1/app/bootstrap')
+    appService.getBootstrap()
       .then((response) => {
         if (active) setBootstrap(response)
       })

@@ -17,7 +17,7 @@ function friendlyNetworkError(error) {
   return new ApiError('Something went wrong. Please try again.', 0, 'request_failed')
 }
 
-async function request(path, options = {}) {
+export async function apiRequest(path, options = {}) {
   const headers = new Headers(options.headers)
   let body = options.body
 
@@ -28,7 +28,7 @@ async function request(path, options = {}) {
   if (options.method && options.method !== 'GET' && options.method !== 'HEAD') {
     let csrfResponse
     try {
-      csrfResponse = await fetch('/api/v1/auth/csrf', { credentials: 'same-origin' })
+      csrfResponse = await fetch('/api/auth/csrf', { credentials: 'same-origin' })
     } catch (error) {
       throw friendlyNetworkError(error)
     }
@@ -66,7 +66,3 @@ async function request(path, options = {}) {
   }
   return result
 }
-
-export const apiGet = (path) => request(path)
-export const apiPost = (path, body) => request(path, { method: 'POST', body })
-export const apiDelete = (path) => request(path, { method: 'DELETE' })
