@@ -2,10 +2,14 @@ package com.chimpchat.api;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Map;
+import java.util.UUID;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -54,6 +58,22 @@ class ChimpchatapiApplicationTests {
 				.andExpect(status().isUnauthorized());
 		mockMvc.perform(get("/api/v1/channels/instagram/oauth/start"))
 				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void instagramOAuthCallbackUsesSessionStateInsteadOfRequiringAuthentication() throws Exception {
+		String state = "one-time-state";
+		MockHttpSession session = new MockHttpSession();
+		session.setAttribute("instagram_oauth_states", Map.of(
+				state, UUID.randomUUID() + ":" + System.currentTimeMillis()));
+
+		mockMvc.perform(get("/api/v1/channels/instagram/oauth/callback")
+						.session(session)
+						.param("state", state)
+						.param("error", "access_denied"))
+				.andExpect(status().is3xxRedirection())
+				.andExpect(result -> assertTrue(
+						result.getResponse().getRedirectedUrl().contains("channel_error=instagram_login_cancelled")));
 	}
 
 	@Test

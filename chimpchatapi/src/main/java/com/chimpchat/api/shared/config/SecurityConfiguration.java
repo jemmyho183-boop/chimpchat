@@ -48,6 +48,7 @@ public class SecurityConfiguration {
                                 "/api/auth/magic-link/request",
                                 "/api/auth/magic-link/verify",
                                 "/api/v1/auth/refresh",
+                                "/api/v1/channels/instagram/oauth/callback",
                                 "/actuator/health",
                                 "/actuator/info",
                                 "/oauth2/**",

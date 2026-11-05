@@ -85,14 +85,13 @@ public class ChannelController {
 
     @GetMapping("/instagram/oauth/callback")
     public ResponseEntity<Void> instagramCallback(
-            @AuthenticationPrincipal AppUserPrincipal principal,
             @RequestParam(required = false) String code,
             @RequestParam(required = false) String state,
             @RequestParam(required = false) String error,
             HttpSession session) {
         String expected = consumeState(session, state);
-        if (expected == null || state == null || !expected.startsWith(principal.getId() + ":")
-                || !isFresh(expected)) {
+        UUID ownerId = ownerId(expected);
+        if (ownerId == null || state == null || !isFresh(expected)) {
             return frontendRedirect("channel_error", "instagram_login_expired");
         }
         if (error != null) {
@@ -104,7 +103,7 @@ public class ChannelController {
 
         try {
             MetaConnection connection = metaInstagramBusiness.exchangeCode(code);
-            instagramChannelBusiness.connect(principal.getId(), connection);
+            instagramChannelBusiness.connect(ownerId, connection);
             return frontendRedirect("channel_connected", "instagram");
         } catch (MetaInstagramBusiness.ChannelException exception) {
             logger.warn("Instagram connection failed: {}", exception.getMessage());
@@ -166,6 +165,21 @@ public class ChannelController {
             return System.currentTimeMillis() - issuedAt < 10 * 60 * 1000L;
         } catch (NumberFormatException exception) {
             return false;
+        }
+    }
+
+    private UUID ownerId(String stateValue) {
+        if (stateValue == null) {
+            return null;
+        }
+        int separator = stateValue.lastIndexOf(':');
+        if (separator < 0) {
+            return null;
+        }
+        try {
+            return UUID.fromString(stateValue.substring(0, separator));
+        } catch (IllegalArgumentException exception) {
+            return null;
         }
     }
 
