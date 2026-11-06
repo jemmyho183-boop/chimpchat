@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { authService } from '../../../shared/services/auth-service'
 import { channelService } from '../../../shared/services/channel-service'
 import { BrandHeader } from '../../../shared/components/BrandHeader'
-import { PlatformMark } from '../../../shared/components/PlatformMark'
 import { useToast } from '../../../shared/components/toast-context'
+import { ConnectedChannelsList } from '../../channels/components/ConnectedChannelsList'
 
 export function DashboardPage({ bootstrap }) {
   const [params] = useSearchParams()
@@ -76,20 +76,9 @@ export function DashboardPage({ bootstrap }) {
           </div>
           <span className="count-label">{instagram.accounts.length} {instagram.accounts.length === 1 ? 'account' : 'accounts'}</span>
         </div>
-        <div className="connected-list">
-          {instagram.accounts.map((account) => (
-            <div className="connected-account" key={account.id}>
-              <span className="channel-icon-wrap"><PlatformMark platform="INSTAGRAM" /></span>
-              <div className="connected-account-info">
-                <strong>@{account.username}</strong>
-                <span>Instagram professional account</span>
-              </div>
-              <span className="connected-status"><span aria-hidden="true" /> Connected</span>
-            </div>
-          ))}
-        </div>
+        <ConnectedChannelsList channels={bootstrap.channels} />
         <div className="dashboard-actions">
-          <p>More ways to connect are on the way.</p>
+          <Link className="text-button" to="/connect-channels">Manage channels</Link>
           <button className="text-button text-button-danger" type="button" onClick={disconnectInstagram} disabled={disconnecting}>
             {disconnecting ? 'Disconnecting…' : 'Disconnect Instagram'}
           </button>

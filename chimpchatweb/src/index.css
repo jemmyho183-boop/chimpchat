@@ -693,6 +693,12 @@ input:focus-visible {
   max-width: 100%;
 }
 
+.channel-page-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+}
+
 .onboarding-footnote {
   margin: 1rem 0 0;
   color: var(--color-ink-muted);

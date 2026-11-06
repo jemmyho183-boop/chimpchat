@@ -7,13 +7,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import com.chimpchat.api.auth.business.AppUserPrincipal;
-import com.chimpchat.api.channel.business.InstagramChannelBusiness;
-import com.chimpchat.api.channel.business.MetaInstagramBusiness;
-import com.chimpchat.api.channel.business.MetaInstagramBusiness.MetaConnection;
-import com.chimpchat.api.channel.business.TokenEncryptionBusiness;
-import com.chimpchat.api.channel.dto.ChannelStatusResponseDto;
-import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,6 +20,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import com.chimpchat.api.auth.business.AppUserPrincipal;
+import com.chimpchat.api.channel.business.InstagramChannelBusiness;
+import com.chimpchat.api.channel.business.MetaInstagramBusiness;
+import com.chimpchat.api.channel.business.MetaInstagramBusiness.MetaConnection;
+import com.chimpchat.api.channel.business.TokenEncryptionBusiness;
+import com.chimpchat.api.channel.dto.ChannelStatusResponseDto;
+
+import jakarta.servlet.http.HttpSession;
 
 @RestController
 @RequestMapping("/api/v1/channels")
@@ -60,13 +62,13 @@ public class ChannelController {
     public ResponseEntity<Void> startInstagramOAuth(
             @AuthenticationPrincipal AppUserPrincipal principal,
             HttpSession session) {
-            if (!metaInstagramBusiness.isConfigured()) {
-                return frontendRedirect("channel_error", "instagram_not_configured");
-            }
-            if (!tokenEncryptionBusiness.isConfigured()) {
-                return frontendRedirect("channel_error", "token_encryption_unavailable");
-            }
-            try {
+        if (!metaInstagramBusiness.isConfigured()) {
+            return frontendRedirect("channel_error", "instagram_not_configured");
+        }
+        if (!tokenEncryptionBusiness.isConfigured()) {
+            return frontendRedirect("channel_error", "token_encryption_unavailable");
+        }
+        try {
             String state = newState();
             Map<String, String> states = currentStates(session);
             if (states.size() >= 5) {

@@ -78,7 +78,6 @@ function AuthenticatedRoute({ children, requireConnected = false }) {
 
   const connected = bootstrap.nextStep === 'DASHBOARD'
   if (requireConnected && !connected) return <Navigate to="/connect-channels" replace />
-  if (!requireConnected && connected) return <Navigate to="/dashboard" replace />
   return children(bootstrap)
 }
 
