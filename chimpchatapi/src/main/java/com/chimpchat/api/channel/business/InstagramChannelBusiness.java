@@ -43,7 +43,8 @@ public class InstagramChannelBusiness {
 
         connection.updateCredentials(metaConnection.clientBusinessId(), encryptedToken);
         connection.replaceAccounts(metaConnection.accounts().stream()
-                .map(account -> new ChannelAccountEntity(account.id(), account.username()))
+                .map(account -> new ChannelAccountEntity(
+                        account.id(), account.username(), account.profilePictureUrl()))
                 .toList());
         connectionRepository.save(connection);
         return toResponse(connection);
@@ -71,7 +72,7 @@ public class InstagramChannelBusiness {
     private ChannelStatusResponseDto toResponse(ChannelConnectionEntity connection) {
         List<ChannelAccountResponseDto> accounts = connection.getAccounts().stream()
                 .map(account -> new ChannelAccountResponseDto(
-                        account.getExternalAccountId(), account.getUsername()))
+                        account.getExternalAccountId(), account.getUsername(), account.getProfilePictureUrl()))
                 .toList();
         return new ChannelStatusResponseDto(PROVIDER, "CONNECTED", connection.getId(), accounts);
     }

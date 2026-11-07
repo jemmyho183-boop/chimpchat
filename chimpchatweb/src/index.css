@@ -28,8 +28,8 @@
   --text-sm: 0.875rem;
   --text-base: 1rem;
   --text-lg: 1.125rem;
-  --text-display: clamp(3rem, 5.6vw, 5.3rem);
-  --text-heading: clamp(2.1rem, 3.8vw, 2.8rem);
+  --text-heading: clamp(1.9rem, 5vw, 2.8rem);
+  --text-subheading: clamp(1.25rem, 2.4vw, 1.5rem);
 
   --space-1: 0.5rem;
   --space-2: 1rem;
@@ -46,6 +46,25 @@
 
 * {
   box-sizing: border-box;
+}
+
+h1,
+h2,
+h3 {
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.05em;
+  line-height: 1.08;
+}
+
+h1 {
+  font-size: var(--text-heading);
+}
+
+h2,
+h3 {
+  font-size: var(--text-subheading);
 }
 
 html,
@@ -219,11 +238,6 @@ input:focus-visible {
 
 .login-card h1 {
   margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(2rem, 5vw, 2.6rem);
-  font-weight: 500;
-  letter-spacing: -0.055em;
-  line-height: 1.08;
 }
 
 .signin-copy {
@@ -249,11 +263,6 @@ input:focus-visible {
 .message-panel h1,
 .section-heading h2 {
   margin: 1rem 0;
-  font-family: var(--font-display);
-  font-size: var(--text-heading);
-  font-weight: 500;
-  letter-spacing: -0.05em;
-  line-height: 1.08;
 }
 
 .login-copy {
@@ -271,8 +280,9 @@ input:focus-visible {
   justify-content: center;
   gap: 0.75rem;
   padding: 0.8rem 1rem;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-ink);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
   font-size: var(--text-sm);
   font-weight: 700;
@@ -280,29 +290,38 @@ input:focus-visible {
   text-decoration: none;
   transition:
     background-color 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease;
+    border-bottom-width 160ms ease,
+    color 160ms ease,
+    transform 300ms cubic-bezier(0.5, 2.5, 0.7, 0.7);
+}
+
+.button:hover:not(:disabled) {
+  border-bottom-width: 5px;
+  transform: translateY(-0.3em);
 }
 
 .button-primary {
   background: var(--color-brand);
   color: var(--color-ink);
+  width: auto;
+}
+
+.button-primary-full {
+  background: var(--color-brand);
+  color: var(--color-ink);
 }
 
 .button-primary:hover:not(:disabled) {
-  background: var(--color-brand-hover);
-  transform: translateY(-1px);
+  background: var(--color-brand);
 }
 
 .button-secondary {
-  border-color: var(--color-border);
   background: var(--color-white);
   color: var(--color-ink);
 }
 
 .button-secondary:hover:not(:disabled) {
-  border-color: var(--color-ink);
-  background: var(--color-neutral-surface);
+  background: var(--color-white);
 }
 
 .button-disabled,
@@ -317,6 +336,7 @@ input:focus-visible {
 .button-disabled:hover,
 .button:disabled:hover {
   transform: none;
+  border-bottom-width: 2px;
 }
 
 .google-button {
@@ -538,7 +558,6 @@ input:focus-visible {
   display: flex;
   width: min(100%, 64rem);
   flex-direction: column;
-  justify-content: center;
 }
 
 .onboarding-heading,
@@ -554,15 +573,6 @@ input:focus-visible {
 .onboarding-heading h1,
 .dashboard-heading h1 {
   margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(2.7rem, 4.5vw, 4.25rem);
-  font-weight: 500;
-  letter-spacing: -0.065em;
-  line-height: 1;
-}
-
-.onboarding-heading h1 {
-  font-size: clamp(2.4rem, 4vw, 3.25rem);
 }
 
 .intro-copy {
@@ -664,10 +674,6 @@ input:focus-visible {
 
 .channel-card h2 {
   margin: 1rem 0 0;
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 600;
-  letter-spacing: -0.035em;
 }
 
 .channel-card > p {
@@ -716,7 +722,6 @@ input:focus-visible {
 .dashboard-layout {
   display: flex;
   flex-direction: column;
-  justify-content: center;
 }
 
 .dashboard-section {
@@ -739,10 +744,6 @@ input:focus-visible {
   margin-bottom: 0.5rem;
 }
 
-.section-heading h2 {
-  font-size: 1.75rem;
-}
-
 .count-label {
   color: var(--color-ink-muted);
   font-size: var(--text-sm);
@@ -758,6 +759,22 @@ input:focus-visible {
   align-items: center;
   gap: 0.85rem;
   border-bottom: 1px solid var(--color-border);
+}
+
+.connected-account-avatar {
+  display: block;
+  width: 2.6rem;
+  height: 2.6rem;
+  flex: 0 0 auto;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.connected-account-avatar-fallback {
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-white);
 }
 
 .connected-account-info {
@@ -852,9 +869,6 @@ input:focus-visible {
   max-width: 36rem;
   margin: 0;
   color: var(--color-ink);
-  font-family: var(--font-display);
-  font-size: var(--text-heading);
-  font-weight: 500;
 }
 
 .site-footer {
@@ -928,23 +942,10 @@ input:focus-visible {
     padding: 1rem clamp(0.5rem, 4vw, 1.25rem);
   }
 
-  .login-card h1 {
-    font-size: clamp(1.9rem, 7vw, 2.4rem);
-  }
-
   .onboarding-layout,
   .dashboard-layout {
     overflow: auto;
     padding: 1rem 0;
-  }
-
-  .onboarding-heading h1,
-  .dashboard-heading h1 {
-    font-size: clamp(2.4rem, 9vw, 3.4rem);
-  }
-
-  .onboarding-heading h1 {
-    font-size: clamp(2.2rem, 8vw, 3rem);
   }
 
   .onboarding-heading .intro-copy {
@@ -982,10 +983,6 @@ input:focus-visible {
   .dashboard-section {
     margin-top: 1.25rem;
     padding: 1rem;
-  }
-
-  .section-heading h2 {
-    font-size: 1.45rem;
   }
 
   .connected-account {

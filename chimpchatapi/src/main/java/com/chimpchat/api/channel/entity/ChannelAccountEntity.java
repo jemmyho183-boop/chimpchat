@@ -29,12 +29,16 @@ public class ChannelAccountEntity {
     @Column(nullable = false, length = 255)
     private String username;
 
+    @Column(name = "profile_picture_url", columnDefinition = "text")
+    private String profilePictureUrl;
+
     protected ChannelAccountEntity() {}
 
-    public ChannelAccountEntity(String externalAccountId, String username) {
+    public ChannelAccountEntity(String externalAccountId, String username, String profilePictureUrl) {
         id = UUID.randomUUID();
         this.externalAccountId = externalAccountId;
         this.username = username;
+        this.profilePictureUrl = profilePictureUrl;
     }
 
     void attachTo(ChannelConnectionEntity connection) {
@@ -47,5 +51,9 @@ public class ChannelAccountEntity {
 
     public String getUsername() {
         return username;
+    }
+
+    public String getProfilePictureUrl() {
+        return profilePictureUrl;
     }
 }

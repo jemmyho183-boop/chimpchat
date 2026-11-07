@@ -1,6 +1,6 @@
 #FileLock
-#Thu Nov 05 22:04:54 IST 2026
-server=192.168.1.7\:56940
-hostName=Shivam-PC
+#Sat Nov 07 19:39:01 IST 2026
+server=192.168.31.55\:55832
+hostName=Shivam-PC.lan
 method=file
-id=1a1ac903687021ddaf96a42e432160a71d4670ab563
+id=1a1b6575c82500bbd2d1ae68c59378dd904b11d7125

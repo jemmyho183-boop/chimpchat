@@ -90,7 +90,7 @@ public class MetaInstagramBusiness {
 
         URI accountsUri = UriComponentsBuilder
                 .fromUriString(graphUri + "/me/assigned_instagram_accounts")
-                .queryParam("fields", "id,username")
+                .queryParam("fields", "id,username,profile_picture_url")
                 .queryParam("access_token", accessToken)
                 .build()
                 .encode()
@@ -113,7 +113,8 @@ public class MetaInstagramBusiness {
         for (JsonNode account : data) {
             accounts.add(new InstagramAccount(
                     requiredText(account, "id"),
-                    requiredText(account, "username")));
+                    requiredText(account, "username"),
+                    optionalText(account, "profile_picture_url")));
         }
         return List.copyOf(accounts);
     }
@@ -159,6 +160,14 @@ public class MetaInstagramBusiness {
         return value.asText();
     }
 
+    private String optionalText(JsonNode json, String field) {
+        JsonNode value = json.path(field);
+        if (value.isMissingNode() || value.isNull() || value.asText().isBlank()) {
+            return null;
+        }
+        return value.asText();
+    }
+
     private void requireConfigured(String value, String setting) {
         if (!isPresent(value)) {
             throw new ChannelException("Instagram connection is not configured. Set " + setting + ".");
@@ -169,7 +178,7 @@ public class MetaInstagramBusiness {
         return value != null && !value.isBlank();
     }
 
-    public record InstagramAccount(String id, String username) {}
+    public record InstagramAccount(String id, String username, String profilePictureUrl) {}
 
     public record MetaConnection(String clientBusinessId, List<InstagramAccount> accounts, String accessToken) {}
 
