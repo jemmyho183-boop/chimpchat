@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { BrandHeader } from "../../../shared/components/BrandHeader";
 import { Button } from "../../../shared/components/Button";
 import { PlatformMark } from "../../../shared/components/PlatformMark";
 import { useToast } from "../../../shared/components/toast-context";
+import { useOAuthPopup } from "../../../shared/hooks/useOAuthPopup";
 import { ConnectedChannelsList } from "../components/ConnectedChannelsList";
 
 const channelErrors = {
@@ -26,12 +27,15 @@ const channelErrors = {
 
 export function ConnectChannelsPage({ bootstrap }) {
   const [params] = useSearchParams();
-  const [connecting, setConnecting] = useState(false);
+  const navigate = useNavigate();
+  const oauth = useOAuthPopup();
   const [showCatalog, setShowCatalog] = useState(
     !bootstrap.channels.some((channel) => channel.status === "CONNECTED"),
   );
   const { notify } = useToast();
-  const error = channelErrors[params.get("channel_error")];
+  const error =
+    channelErrors[oauth.errorCode] ||
+    channelErrors[params.get("channel_error")];
   const connectedChannels = bootstrap.channels.filter(
     (channel) => channel.status === "CONNECTED",
   );
@@ -45,13 +49,35 @@ export function ConnectChannelsPage({ bootstrap }) {
   const instagramReady =
     instagram?.status === "NOT_CONNECTED" || instagram?.status === "CONNECTED";
 
+  useEffect(() => {
+    if (error) notify(error, "error");
+  }, [error, notify]);
+
   function connectInstagram() {
     if (!instagramReady) {
       notify("Instagram is not ready to connect yet.", "error");
       return;
     }
-    setConnecting(true);
-    window.location.assign("/api/v1/channels/instagram/oauth/start");
+    oauth.openPopup("instagram", "/api/v1/channels/instagram/oauth/start", () =>
+      navigate("/?channel_connected=instagram", { replace: true }),
+    );
+  }
+
+  function openDashboard(channel, account) {
+    const selection = new URLSearchParams({
+      channel: channel.provider,
+      account: account.id,
+    });
+    navigate(`/dashboard?${selection.toString()}`);
+  }
+
+  if (oauth.opening) {
+    return (
+      <main className="loading-page" aria-live="polite">
+        <span className="loading-mark" aria-hidden="true" />
+        Complete Instagram connection in the pop-up window…
+      </main>
+    );
   }
 
   return (
@@ -60,21 +86,13 @@ export function ConnectChannelsPage({ bootstrap }) {
       <main className="onboarding-layout channels-layout">
         <div className="onboarding-heading">
           <p className="eyebrow">WORKSPACE CHANNELS</p>
-          <h1>
-            {showCatalog ? "Connect your channels" : "Your connected channels"}
-          </h1>
+          <h1>{showCatalog ? "Connect your channels" : "Choose a channel"}</h1>
           <p className="intro-copy">
             {showCatalog
               ? "Bring your customer conversations together in one inbox."
-              : "Manage the channels connected to your workspace."}
+              : "Choose a connected account to open its dashboard."}
           </p>
         </div>
-
-        {error && (
-          <p className="inline-notice notice-error page-notice" role="alert">
-            {error}
-          </p>
-        )}
 
         {showCatalog ? (
           <>
@@ -104,18 +122,12 @@ export function ConnectChannelsPage({ bootstrap }) {
                 <Button
                   type="button"
                   onClick={connectInstagram}
-                  disabled={connecting}
+                  disabled={oauth.opening}
                 >
-                  {connecting
-                    ? "Opening Instagram…"
-                    : instagramReady
-                      ? "Connect Instagram"
-                      : "Setup required"}
-                  {!connecting && (
-                    <span className="button-arrow" aria-hidden="true">
-                      ↗
-                    </span>
-                  )}
+                  {instagramReady ? "Connect Instagram" : "Setup required"}
+                  <span className="button-arrow" aria-hidden="true">
+                    ↗
+                  </span>
                 </Button>
               </section>
 
@@ -149,7 +161,10 @@ export function ConnectChannelsPage({ bootstrap }) {
             </div>
           </>
         ) : (
-          <section className="dashboard-section" aria-labelledby="channels-heading">
+          <section
+            className="dashboard-section"
+            aria-labelledby="channels-heading"
+          >
             <div className="section-heading">
               <div>
                 <p className="eyebrow">CONNECTED CHANNELS</p>
@@ -160,11 +175,16 @@ export function ConnectChannelsPage({ bootstrap }) {
                 {connectedAccountCount === 1 ? "account" : "accounts"}
               </span>
             </div>
-            <ConnectedChannelsList channels={connectedChannels} />
+            <ConnectedChannelsList
+              channels={connectedChannels}
+              onSelectAccount={openDashboard}
+            />
             <div className="dashboard-actions">
-              <p>Connect another channel to bring more conversations together.</p>
+              <p>
+                Connect another channel to bring more conversations together.
+              </p>
               <Button type="button" onClick={() => setShowCatalog(true)}>
-                Connect another channel
+                + Add channel
               </Button>
             </div>
           </section>

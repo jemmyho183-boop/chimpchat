@@ -58,11 +58,11 @@ public class GoogleAuthenticationSuccessHandler implements AuthenticationSuccess
 
     private String frontendRedirect(String authError) {
         UriComponentsBuilder redirect = UriComponentsBuilder.fromUriString(frontendUrl)
-                .replacePath("/")
+                .replacePath("/auth/popup-result")
                 .replaceQuery(null);
-        if (authError != null) {
-            redirect.queryParam("auth_error", authError);
-        }
+        redirect.queryParam("provider", "google")
+                .queryParam("status", authError == null ? "success" : "error");
+        if (authError != null) redirect.queryParam("error", authError);
         return redirect.build().encode().toUriString();
     }
 }

@@ -63,10 +63,10 @@ public class ChannelController {
             @AuthenticationPrincipal AppUserPrincipal principal,
             HttpSession session) {
         if (!metaInstagramBusiness.isConfigured()) {
-            return frontendRedirect("channel_error", "instagram_not_configured");
+            return popupRedirect("error", "instagram_not_configured");
         }
         if (!tokenEncryptionBusiness.isConfigured()) {
-            return frontendRedirect("channel_error", "token_encryption_unavailable");
+            return popupRedirect("error", "token_encryption_unavailable");
         }
         try {
             String state = newState();
@@ -81,7 +81,7 @@ public class ChannelController {
                     .build();
         } catch (MetaInstagramBusiness.ChannelException exception) {
             logger.warn("Instagram OAuth could not start: {}", exception.getMessage());
-            return frontendRedirect("channel_error", "instagram_not_configured");
+            return popupRedirect("error", "instagram_not_configured");
         }
     }
 
@@ -94,28 +94,28 @@ public class ChannelController {
         String expected = consumeState(session, state);
         UUID ownerId = ownerId(expected);
         if (ownerId == null || state == null || !isFresh(expected)) {
-            return frontendRedirect("channel_error", "instagram_login_expired");
+            return popupRedirect("error", "instagram_login_expired");
         }
         if (error != null) {
-            return frontendRedirect("channel_error", "instagram_login_cancelled");
+            return popupRedirect("error", "instagram_login_cancelled");
         }
         if (code == null || code.isBlank()) {
-            return frontendRedirect("channel_error", "instagram_code_missing");
+            return popupRedirect("error", "instagram_code_missing");
         }
 
         try {
             MetaConnection connection = metaInstagramBusiness.exchangeCode(code);
             instagramChannelBusiness.connect(ownerId, connection);
-            return frontendRedirect("channel_connected", "instagram");
+            return popupRedirect("success", null);
         } catch (MetaInstagramBusiness.ChannelException exception) {
             logger.warn("Instagram connection failed: {}", exception.getMessage());
-            return frontendRedirect("channel_error", "instagram_connection_failed");
+            return popupRedirect("error", "instagram_connection_failed");
         } catch (InstagramChannelBusiness.ChannelException exception) {
             logger.warn("Instagram connection could not be stored: {}", exception.getCode());
-            return frontendRedirect("channel_error", exception.getCode());
+            return popupRedirect("error", exception.getCode());
         } catch (TokenEncryptionBusiness.ChannelException exception) {
             logger.warn("Instagram token could not be stored: {}", exception.getCode());
-            return frontendRedirect("channel_error", exception.getCode());
+            return popupRedirect("error", exception.getCode());
         }
     }
 
@@ -185,9 +185,16 @@ public class ChannelController {
         }
     }
 
-    private ResponseEntity<Void> frontendRedirect(String key, String value) {
-        String url = UriComponentsBuilder.fromUriString(frontendUrl)
-                .queryParam(key, value)
+    private ResponseEntity<Void> popupRedirect(String status, String error) {
+        UriComponentsBuilder redirect = UriComponentsBuilder.fromUriString(frontendUrl)
+                .replacePath("/auth/popup-result")
+                .replaceQuery(null)
+                .queryParam("provider", "instagram")
+                .queryParam("status", status);
+        if (error != null) {
+            redirect.queryParam("error", error);
+        }
+        String url = redirect
                 .build()
                 .encode()
                 .toUriString();

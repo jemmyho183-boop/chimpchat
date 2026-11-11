@@ -73,7 +73,8 @@ class ChimpchatapiApplicationTests {
 						.param("error", "access_denied"))
 				.andExpect(status().is3xxRedirection())
 				.andExpect(result -> assertTrue(
-						result.getResponse().getRedirectedUrl().contains("channel_error=instagram_login_cancelled")));
+						result.getResponse().getRedirectedUrl().contains(
+								"/auth/popup-result?provider=instagram&status=error&error=instagram_login_cancelled")));
 	}
 
 	@Test

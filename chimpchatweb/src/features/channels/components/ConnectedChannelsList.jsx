@@ -31,7 +31,7 @@ function ConnectedAccountAvatar({ account, platform }) {
   );
 }
 
-export function ConnectedChannelsList({ channels }) {
+export function ConnectedChannelsList({ channels, onSelectAccount }) {
   const connectedChannels = channels.filter(
     (channel) => channel.status === "CONNECTED",
   );
@@ -41,7 +41,9 @@ export function ConnectedChannelsList({ channels }) {
       {connectedChannels.flatMap((channel) =>
         channel.accounts.map((account) => (
           <div
-            className="connected-account"
+            className={`connected-account${
+              onSelectAccount ? " connected-account-selectable" : ""
+            }`}
             key={`${channel.provider}-${account.id}`}
           >
             <ConnectedAccountAvatar
@@ -62,6 +64,19 @@ export function ConnectedChannelsList({ channels }) {
               <span aria-hidden="true" />
               Connected
             </span>
+            {onSelectAccount && (
+              <button
+                className="button button-secondary connected-account-select"
+                type="button"
+                aria-label={`Open ${channel.provider} dashboard for ${account.username}`}
+                onClick={() => onSelectAccount(channel, account)}
+              >
+                Open dashboard
+                <span className="button-arrow" aria-hidden="true">
+                  ↗
+                </span>
+              </button>
+            )}
           </div>
         )),
       )}

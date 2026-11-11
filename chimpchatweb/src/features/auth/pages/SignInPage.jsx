@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { BrandHeader } from "../../../shared/components/BrandHeader";
 import { authService } from "../../../shared/services/auth-service";
 import { PlatformMark } from "../../../shared/components/PlatformMark";
+import { useToast } from "../../../shared/components/toast-context";
+import { useOAuthPopup } from "../../../shared/hooks/useOAuthPopup";
 
 const authErrors = {
   identity_link_required:
@@ -20,6 +22,8 @@ export function SignInPage() {
   const [error, setError] = useState("");
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const oauth = useOAuthPopup();
+  const { notify } = useToast();
 
   useEffect(() => {
     authService
@@ -46,7 +50,22 @@ export function SignInPage() {
     }
   }
 
-  const authError = authErrors[searchParams.get("auth_error")];
+  const authError =
+    authErrors[oauth.errorCode] ||
+    authErrors[searchParams.get("auth_error")];
+
+  useEffect(() => {
+    if (authError) notify(authError, "error");
+  }, [authError, notify]);
+
+  if (oauth.opening) {
+    return (
+      <main className="loading-page" aria-live="polite">
+        <span className="loading-mark" aria-hidden="true" />
+        Complete Google sign-in in the pop-up window…
+      </main>
+    );
+  }
 
   return (
     <div className="app-shell">
@@ -61,15 +80,20 @@ export function SignInPage() {
             </p>
 
             {options?.googleEnabled && (
-              <a
+              <button
                 className="button button-secondary google-button"
-                href="/oauth2/authorization/google"
+                type="button"
+                onClick={() =>
+                  oauth.openPopup("google", "/oauth2/authorization/google", () =>
+                    navigate("/", { replace: true }),
+                  )
+                }
               >
                 <span className="google-mark">
                   <PlatformMark platform="GOOGLE" />
                 </span>
                 <span>Continue with Google</span>
-              </a>
+              </button>
             )}
 
             {options?.googleEnabled && (
@@ -124,9 +148,9 @@ export function SignInPage() {
                 Sign-in is being set up. Please try again later.
               </p>
             )}
-            {(error || authError) && (
+            {error && (
               <p className="inline-notice notice-error" role="alert">
-                {error || authError}
+                {error}
               </p>
             )}
           </div>

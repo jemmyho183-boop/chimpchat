@@ -62,9 +62,11 @@ public class SecurityConfiguration {
                             logger.warn("Google OAuth authentication failed: {}",
                                     exception.getClass().getSimpleName());
                             String redirectUrl = UriComponentsBuilder.fromUriString(frontendUrl)
-                                    .replacePath("/")
+                                    .replacePath("/auth/popup-result")
                                     .replaceQuery(null)
-                                    .queryParam("auth_error", "google_sign_in_failed")
+                                    .queryParam("provider", "google")
+                                    .queryParam("status", "error")
+                                    .queryParam("error", "google_sign_in_failed")
                                     .build()
                                     .encode()
                                     .toUriString();

@@ -1,91 +1,155 @@
-import { useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { authService } from '../../../shared/services/auth-service'
-import { channelService } from '../../../shared/services/channel-service'
-import { BrandHeader } from '../../../shared/components/BrandHeader'
-import { useToast } from '../../../shared/components/toast-context'
-import { ConnectedChannelsList } from '../../channels/components/ConnectedChannelsList'
+import { useEffect, useState } from "react";
+import {
+  Link,
+  Navigate,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
+import { DashboardHeader } from "../components/DashboardHeader";
+import { DashboardSidebar } from "../components/DashboardSidebar";
+import { ConnectedChannelsList } from "../../channels/components/ConnectedChannelsList";
+import { authService } from "../../../shared/services/auth-service";
+import { channelService } from "../../../shared/services/channel-service";
+import { useToast } from "../../../shared/components/toast-context";
+
+const navigationItems = [{ label: "Home", to: "/dashboard", icon: "home" }];
 
 export function DashboardPage({ bootstrap }) {
-  const [params] = useSearchParams()
-  const [disconnecting, setDisconnecting] = useState(false)
-  const [error, setError] = useState('')
-  const { notify } = useToast()
-  const navigate = useNavigate()
-  const instagram = bootstrap.channels.find((channel) => channel.provider === 'INSTAGRAM')
-  const justConnected = params.get('channel_connected') === 'instagram'
+  const [params] = useSearchParams();
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [error, setError] = useState("");
+  const { notify } = useToast();
+  const navigate = useNavigate();
+  const selectedProvider = params.get("channel");
+  const selectedAccountId = params.get("account");
+  const connectedChannels = bootstrap.channels.filter(
+    (channel) => channel.status === "CONNECTED",
+  );
+  const selectedChannel = connectedChannels.find(
+    (channel) => channel.provider === selectedProvider,
+  );
+  const selectedAccount = selectedChannel?.accounts.find(
+    (account) => account.id === selectedAccountId,
+  );
+  const hasSelection = selectedProvider !== null || selectedAccountId !== null;
+  const dashboardChannels =
+    selectedChannel && selectedAccount
+      ? [{ ...selectedChannel, accounts: [selectedAccount] }]
+      : connectedChannels;
+  const connectedAccountCount = dashboardChannels.reduce(
+    (count, channel) => count + channel.accounts.length,
+    0,
+  );
+  const instagram = bootstrap.channels.find(
+    (channel) => channel.provider === "INSTAGRAM",
+  );
+  const justConnected = params.get("channel_connected") === "instagram";
 
-  if (!instagram) {
-    return <main className="loading-page error-page">
-      <p className="eyebrow">WORKSPACE SETUP</p>
-      <h1>We could not load your channel.</h1>
-      <p className="intro-copy">Refresh the page to try again. If the problem continues, contact your workspace administrator.</p>
-      <button className="button button-primary" type="button" onClick={() => window.location.reload()}>Refresh</button>
-    </main>
-  }
-
-  async function disconnectInstagram() {
-    if (!instagram?.connectionId || !window.confirm('Disconnect Instagram from this workspace?')) return
-    setDisconnecting(true)
-    setError('')
-    try {
-      await channelService.disconnect(instagram.connectionId)
-      notify('Instagram has been disconnected from your workspace.')
-      navigate('/connect-channels', { replace: true })
-    } catch (requestError) {
-      setError(requestError.message)
-      notify(requestError.message, 'error')
-    } finally {
-      setDisconnecting(false)
+  useEffect(() => {
+    if (justConnected) {
+      notify("Instagram is connected to your workspace.");
     }
+  }, [justConnected, notify]);
+
+  if (hasSelection && (!selectedChannel || !selectedAccount)) {
+    return <Navigate to="/connect-channels" replace />;
   }
 
   async function signOut() {
     try {
-      await authService.logout()
-      navigate('/signin', { replace: true })
+      await authService.logout();
+      navigate("/signin", { replace: true });
     } catch (requestError) {
-      setError(requestError.message)
-      notify(requestError.message, 'error')
+      setError(requestError.message);
+      notify(requestError.message, "error");
     }
   }
 
-  return <div className="app-shell">
-    <BrandHeader caption={bootstrap.workspace.name}>
-      <div className="header-account">
-        <span className="account-email">{bootstrap.user.email}</span>
-        <button className="text-button" type="button" onClick={signOut}>Sign out</button>
-      </div>
-    </BrandHeader>
+  async function disconnectInstagram() {
+    if (
+      !instagram?.connectionId ||
+      !window.confirm("Disconnect Instagram from this workspace?")
+    ) {
+      return;
+    }
 
-    <main className="dashboard-layout">
-      <div className="dashboard-heading">
-        <p className="eyebrow">YOUR WORKSPACE</p>
-        <h1>Good conversations start here.</h1>
-        <p className="intro-copy">Your ChimpChat workspace is ready. Connected channels will appear here as you bring them on.</p>
-      </div>
+    setDisconnecting(true);
+    setError("");
+    try {
+      await channelService.disconnect(instagram.connectionId);
+      notify("Instagram has been disconnected from your workspace.");
+      navigate("/connect-channels", { replace: true });
+    } catch (requestError) {
+      setError(requestError.message);
+      notify(requestError.message, "error");
+    } finally {
+      setDisconnecting(false);
+    }
+  }
 
-      {justConnected && <p className="inline-notice notice-success page-notice" role="status">Instagram is connected to your workspace.</p>}
-      {error && <p className="inline-notice notice-error page-notice" role="alert">{error}</p>}
+  return (
+    <div className="app-shell dashboard-shell">
+      <DashboardHeader user={bootstrap.user} />
+      <DashboardSidebar items={navigationItems} onSignOut={signOut} />
 
-      <section className="dashboard-section" aria-labelledby="channels-heading">
-        <div className="section-heading">
+      <main className="dashboard-content">
+        <div className="dashboard-pagebar">
           <div>
-            <p className="eyebrow">CONNECTED CHANNELS</p>
-            <h2 id="channels-heading">Your conversations</h2>
+            <p className="eyebrow">{bootstrap.workspace.name}</p>
+            <h1>Home</h1>
           </div>
-          <span className="count-label">{instagram.accounts.length} {instagram.accounts.length === 1 ? 'account' : 'accounts'}</span>
+          <Link className="button button-secondary" to="/connect-channels">
+            Manage channels
+          </Link>
         </div>
-        <ConnectedChannelsList channels={bootstrap.channels} />
-        <div className="dashboard-actions">
-          <Link className="text-button" to="/connect-channels">Manage channels</Link>
-          <button className="text-button text-button-danger" type="button" onClick={disconnectInstagram} disabled={disconnecting}>
-            {disconnecting ? 'Disconnecting…' : 'Disconnect Instagram'}
-          </button>
-        </div>
-      </section>
-    </main>
 
-    <footer className="site-footer"><span>© {new Date().getFullYear()} ChimpChat</span><span>Made for better conversations.</span></footer>
-  </div>
+        <div className="dashboard-page-content">
+          {error && (
+            <p className="inline-notice notice-error page-notice" role="alert">
+              {error}
+            </p>
+          )}
+
+          <section
+            className="dashboard-section"
+            aria-labelledby="channels-heading"
+          >
+            <div className="section-heading">
+              <div>
+                <p className="eyebrow">CONNECTED CHANNELS</p>
+                <h2 id="channels-heading">
+                  {selectedAccount
+                    ? selectedAccount.username
+                    : "Your accounts"}
+                </h2>
+              </div>
+              <span className="count-label">
+                {connectedAccountCount}{" "}
+                {connectedAccountCount === 1 ? "account" : "accounts"}
+              </span>
+            </div>
+            {connectedAccountCount > 0 ? (
+              <ConnectedChannelsList channels={dashboardChannels} />
+            ) : (
+              <p className="dashboard-empty">
+                No connected accounts are available.
+              </p>
+            )}
+            {instagram?.connectionId && (
+              <div className="dashboard-actions">
+                <button
+                  className="text-button text-button-danger"
+                  type="button"
+                  onClick={disconnectInstagram}
+                  disabled={disconnecting}
+                >
+                  {disconnecting ? "Disconnecting…" : "Disconnect Instagram"}
+                </button>
+              </div>
+            )}
+          </section>
+        </div>
+      </main>
+    </div>
+  );
 }
