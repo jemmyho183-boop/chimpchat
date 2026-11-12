@@ -25,6 +25,7 @@ import com.chimpchat.api.auth.business.AppUserPrincipal;
 import com.chimpchat.api.channel.business.InstagramChannelBusiness;
 import com.chimpchat.api.channel.business.MetaInstagramBusiness;
 import com.chimpchat.api.channel.business.MetaInstagramBusiness.MetaConnection;
+import com.chimpchat.api.channel.business.MetaInstagramBusiness.WebhookSubscriptionException;
 import com.chimpchat.api.channel.business.TokenEncryptionBusiness;
 import com.chimpchat.api.channel.dto.ChannelStatusResponseDto;
 
@@ -107,6 +108,9 @@ public class ChannelController {
             MetaConnection connection = metaInstagramBusiness.exchangeCode(code);
             instagramChannelBusiness.connect(ownerId, connection);
             return popupRedirect("success", null);
+        } catch (WebhookSubscriptionException exception) {
+            logger.warn("Instagram comment notifications could not be subscribed: {}", exception.getMessage());
+            return popupRedirect("error", "instagram_webhook_subscription_failed");
         } catch (MetaInstagramBusiness.ChannelException exception) {
             logger.warn("Instagram connection failed: {}", exception.getMessage());
             return popupRedirect("error", "instagram_connection_failed");

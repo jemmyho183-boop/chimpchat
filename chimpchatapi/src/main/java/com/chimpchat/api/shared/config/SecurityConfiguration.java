@@ -33,7 +33,9 @@ public class SecurityConfiguration {
             @Value("${app.frontend-url}") String frontendUrl) throws Exception {
         http
                 .securityContext(context -> context.securityContextRepository(securityContextRepository))
-                .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .ignoringRequestMatchers("/api/v1/channels/instagram/webhook"))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(
                                 "/api/health",
@@ -49,6 +51,7 @@ public class SecurityConfiguration {
                                 "/api/auth/magic-link/verify",
                                 "/api/v1/auth/refresh",
                                 "/api/v1/channels/instagram/oauth/callback",
+                                "/api/v1/channels/instagram/webhook",
                                 "/actuator/health",
                                 "/actuator/info",
                                 "/oauth2/**",

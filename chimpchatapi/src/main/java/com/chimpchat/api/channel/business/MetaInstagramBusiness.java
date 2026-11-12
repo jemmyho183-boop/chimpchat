@@ -5,6 +5,8 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -99,8 +101,42 @@ public class MetaInstagramBusiness {
         if (accounts.isEmpty()) {
             throw new ChannelException("No Instagram accounts were shared with this app.");
         }
+        for (InstagramAccount account : accounts) {
+            subscribeToCommentWebhooks(accessToken, account);
+        }
 
         return new MetaConnection(businessId, accounts, accessToken);
+    }
+
+    private void subscribeToCommentWebhooks(String accessToken, InstagramAccount account) {
+        URI uri = UriComponentsBuilder.fromUriString(graphUri)
+                .pathSegment(account.id(), "subscribed_apps")
+                .build()
+                .encode()
+                .toUri();
+        String body = "subscribed_fields=comments&access_token="
+                + URLEncoder.encode(accessToken, StandardCharsets.UTF_8);
+        HttpRequest request = HttpRequest.newBuilder(uri)
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+        try {
+            HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new WebhookSubscriptionException(metaError(response));
+            }
+            if (!objectMapper.readTree(response.body()).path("success").asBoolean(false)) {
+                throw new WebhookSubscriptionException(
+                        "Meta did not confirm comment notifications for Instagram account " + account.id() + ".");
+            }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new WebhookSubscriptionException(
+                    "Instagram comment notification setup was interrupted.", exception);
+        } catch (IOException exception) {
+            throw new WebhookSubscriptionException(
+                    "Could not subscribe the Instagram account to comment notifications.", exception);
+        }
     }
 
     private List<InstagramAccount> readAccounts(JsonNode response) {
@@ -188,6 +224,16 @@ public class MetaInstagramBusiness {
         }
 
         public ChannelException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    public static class WebhookSubscriptionException extends ChannelException {
+        public WebhookSubscriptionException(String message) {
+            super(message);
+        }
+
+        public WebhookSubscriptionException(String message, Throwable cause) {
             super(message, cause);
         }
     }

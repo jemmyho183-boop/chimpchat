@@ -30,6 +30,8 @@ Set `TOKEN_ENCRYPTION_KEY` and the `META_APP_ID`, `META_APP_SECRET`, and `META_C
 https://${NGROK_DOMAIN}/api/v1/channels/instagram/oauth/callback
 ```
 
+For a comment-notification test, set `META_WEBHOOK_VERIFY_TOKEN` in `.env` to a private random value. In the Meta app's **Manage messaging & content on Instagram** use case, request `instagram_manage_comments`, configure the webhook callback as `https://${NGROK_DOMAIN}/api/v1/channels/instagram/webhook`, and subscribe to the `comments` field. The callback verifies Meta's challenge and event signature, then logs the Instagram account, comment, and media IDs without logging comment text. Reconnect the Instagram account after webhook setup; the OAuth flow subscribes each shared account to comment notifications.
+
 The launcher derives the frontend URL, OAuth callback URLs, and secure session cookie setting from `NGROK_DOMAIN`.
 
 From the project root, run:
