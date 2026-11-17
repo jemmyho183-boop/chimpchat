@@ -62,9 +62,7 @@ function PhoneMedia({ media, className = "" }) {
 function PhoneStatusBar() {
   return (
     <div className="instagram-phone-statusbar" aria-hidden="true">
-      <strong>9:41</strong>
       <span className="instagram-phone-island" />
-      <span className="instagram-phone-status-icons">● ▰</span>
     </div>
   );
 }
@@ -230,13 +228,6 @@ export function InstagramPhonePreview({
       <div className="instagram-phone-frame">
         <div className="instagram-phone-display">
           <PhoneStatusBar />
-          <div className="instagram-phone-app-header">
-            <span className="instagram-phone-wordmark">Instagram</span>
-            <span className="instagram-phone-header-actions" aria-hidden="true">
-              <PreviewIcon name="heart" />
-              <PreviewIcon name="send" />
-            </span>
-          </div>
           <div
             className={`instagram-phone-content instagram-phone-content-${screen}`}
             aria-label={`${PREVIEW_SCREENS.find((item) => item.id === screen).label} preview`}

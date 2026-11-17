@@ -50,24 +50,16 @@ class InstagramCommentAutomationMetaBusinessTests {
     }
 
     @Test
-    void sendsPrivateRepliesThroughTheLinkedFacebookPage() throws IOException {
+    void sendsPrivateRepliesThroughTheInstagramAccountMessagesEndpoint() throws IOException {
         AtomicReference<String> requestPath = new AtomicReference<>();
-        AtomicReference<String> pageLookupQuery = new AtomicReference<>();
+        AtomicReference<String> authorization = new AtomicReference<>();
+        AtomicReference<String> contentType = new AtomicReference<>();
         AtomicReference<String> requestBody = new AtomicReference<>();
         HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-        server.createContext("/v26.0/me/accounts", exchange -> {
-            pageLookupQuery.set(exchange.getRequestURI().getRawQuery());
-            byte[] response = """
-                    {"data":[{"id":"page-id","access_token":"page-token","instagram_business_account":{"id":"instagram-account-id"}}]}
-                    """.getBytes(StandardCharsets.UTF_8);
-            exchange.getResponseHeaders().set("Content-Type", "application/json");
-            exchange.sendResponseHeaders(200, response.length);
-            try (var responseBody = exchange.getResponseBody()) {
-                responseBody.write(response);
-            }
-        });
-        server.createContext("/v26.0/page-id/messages", exchange -> {
+        server.createContext("/v26.0/instagram-account-id/messages", exchange -> {
             requestPath.set(exchange.getRequestURI().getPath());
+            authorization.set(exchange.getRequestHeaders().getFirst("Authorization"));
+            contentType.set(exchange.getRequestHeaders().getFirst("Content-Type"));
             requestBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
             byte[] response = "{\"message_id\":\"dm-id\"}".getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().set("Content-Type", "application/json");
@@ -85,13 +77,14 @@ class InstagramCommentAutomationMetaBusinessTests {
                             "instagram-account-id", "comment-id", "user-token", "Here: https://example.test/a&b");
 
             assertEquals("dm-id", reply.id());
-            assertEquals("/v26.0/page-id/messages", requestPath.get());
-            assertEquals("user-token", queryValue(pageLookupQuery.get(), "access_token"));
-            assertEquals("{\"comment_id\":\"comment-id\"}", formValue(requestBody.get(), "recipient"));
+            assertEquals("/v26.0/instagram-account-id/messages", requestPath.get());
+            assertEquals("Bearer user-token", authorization.get());
+            assertEquals("application/json", contentType.get());
+            var payload = new ObjectMapper().readTree(requestBody.get());
+            assertEquals("comment-id", payload.path("recipient").path("comment_id").asText());
             assertEquals(
-                    "{\"text\":\"Here: https://example.test/a&b\"}",
-                    formValue(requestBody.get(), "message"));
-            assertEquals("page-token", formValue(requestBody.get(), "access_token"));
+                    "Here: https://example.test/a&b",
+                    payload.path("message").path("text").asText());
         } finally {
             server.stop(0);
         }

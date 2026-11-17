@@ -1537,13 +1537,12 @@ select:focus-visible {
 }
 
 .instagram-phone-frame {
-  width: min(100%, 18rem);
-  aspect-ratio: 402 / 874;
+  width: min(100%, 16rem);
+  aspect-ratio: 420 / 874;
   margin: 0 auto;
   padding: 0.28rem;
-  border: 0.45rem solid var(--color-ink);
+  border: 0.35rem solid var(--color-ink);
   border-radius: 2.8rem;
-  background: var(--color-ink);
 }
 
 .instagram-phone-display {
@@ -1562,7 +1561,7 @@ select:focus-visible {
 .instagram-phone-statusbar {
   position: relative;
   display: flex;
-  min-height: 2rem;
+  min-height: 1.5rem;
   flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
@@ -1587,7 +1586,7 @@ select:focus-visible {
 
 .instagram-phone-app-header {
   display: flex;
-  min-height: 2.8rem;
+  min-height: 2rem;
   flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
@@ -1687,7 +1686,7 @@ select:focus-visible {
 
 .instagram-phone-action-row {
   display: flex;
-  min-height: 2.35rem;
+  min-height: 2rem;
   align-items: center;
   gap: 0.55rem;
   padding: 0 0.65rem;

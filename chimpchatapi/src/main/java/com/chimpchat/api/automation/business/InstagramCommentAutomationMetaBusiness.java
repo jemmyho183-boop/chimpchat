@@ -2,11 +2,9 @@ package com.chimpchat.api.automation.business;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -44,60 +42,30 @@ public class InstagramCommentAutomationMetaBusiness {
                 .build()
                 .encode()
                 .toUri();
-        return postMessageRequest(uri, "", "id", "reply");
+        HttpRequest request = HttpRequest.newBuilder(uri)
+                .timeout(REQUEST_TIMEOUT)
+                .POST(HttpRequest.BodyPublishers.noBody())
+                .build();
+        return postMessageRequest(request, "id", "reply");
     }
 
     public MetaReply sendPrivateReply(
             String instagramAccountId, String commentId, String accessToken, String message) {
-        JsonNode pages;
-        try {
-            URI pagesUri = UriComponentsBuilder.fromUriString(graphUri + "/me/accounts")
-                    .queryParam("fields", "id,access_token,instagram_business_account{id}")
-                    .queryParam("limit", 100)
-                    .queryParam("access_token", accessToken)
-                    .build()
-                    .encode()
-                    .toUri();
-            pages = getJson(pagesUri).path("data");
-        } catch (MetaRequestException exception) {
-            throw new MetaRequestException(
-                    "Meta could not find the linked Facebook Page needed to send this DM: "
-                            + exception.getMessage(),
-                    false,
-                    exception);
-        }
-
-        String pageId = null;
-        String pageAccessToken = null;
-        if (pages.isArray()) {
-            for (JsonNode page : pages) {
-                if (instagramAccountId.equals(textOrNull(page.path("instagram_business_account").path("id")))) {
-                    pageId = optionalText(page, "id");
-                    pageAccessToken = optionalText(page, "access_token");
-                    break;
-                }
-            }
-        }
-        if (pageId == null || pageAccessToken == null) {
-            throw new MetaRequestException(
-                    "No Facebook Page access token is available for this Instagram account. "
-                            + "Check the pages_show_list and pages_messaging permissions.",
-                    false);
-        }
-
         URI uri = UriComponentsBuilder.fromUriString(graphUri)
-                .pathSegment(pageId, "messages")
+                .pathSegment(instagramAccountId, "messages")
                 .build()
                 .encode()
                 .toUri();
-        var recipient = objectMapper.createObjectNode();
-        recipient.put("comment_id", commentId);
-        var messagePayload = objectMapper.createObjectNode();
-        messagePayload.put("text", message);
-        String body = "recipient=" + URLEncoder.encode(recipient.toString(), StandardCharsets.UTF_8)
-                + "&message=" + URLEncoder.encode(messagePayload.toString(), StandardCharsets.UTF_8)
-                + "&access_token=" + URLEncoder.encode(pageAccessToken, StandardCharsets.UTF_8);
-        return postMessageRequest(uri, body, "message_id", "private reply");
+        var payload = objectMapper.createObjectNode();
+        payload.putObject("recipient").put("comment_id", commentId);
+        payload.putObject("message").put("text", message);
+        HttpRequest request = HttpRequest.newBuilder(uri)
+                .timeout(REQUEST_TIMEOUT)
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + accessToken)
+                .POST(HttpRequest.BodyPublishers.ofString(payload.toString()))
+                .build();
+        return postMessageRequest(request, "message_id", "private reply");
     }
 
     public List<InstagramMedia> listMedia(String instagramAccountId, String accessToken) {
@@ -148,15 +116,7 @@ public class InstagramCommentAutomationMetaBusiness {
         }
     }
 
-    private MetaReply postMessageRequest(URI uri, String body, String idField, String action) {
-        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder(uri).timeout(REQUEST_TIMEOUT);
-        if (body.isEmpty()) {
-            requestBuilder.POST(HttpRequest.BodyPublishers.noBody());
-        } else {
-            requestBuilder.header("Content-Type", "application/x-www-form-urlencoded")
-                    .POST(HttpRequest.BodyPublishers.ofString(body));
-        }
-        HttpRequest request = requestBuilder.build();
+    private MetaReply postMessageRequest(HttpRequest request, String idField, String action) {
         try {
             HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
