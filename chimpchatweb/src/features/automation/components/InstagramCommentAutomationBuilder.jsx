@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "../../../shared/components/Button";
+import { InstagramPhonePreview } from "../../../shared/components/InstagramPhonePreview";
 import { useToast } from "../../../shared/components/toast-context";
 import { instagramCommentAutomationService } from "../services/instagram-comment-automation-service";
 
@@ -44,7 +45,6 @@ function InstagramAutomationForm({
     <form className="instagram-automation-form" onSubmit={onSubmit}>
       <div className="instagram-post-picker">
         <div className="instagram-field-heading">
-          <span className="instagram-field-label">Choose a post or Reel</span>
           <span>Select the post that should start this flow.</span>
         </div>
         <div
@@ -64,7 +64,9 @@ function InstagramAutomationForm({
               <span className="instagram-post-thumbnail instagram-post-thumbnail-empty">
                 Post
               </span>
-              <span className="instagram-post-caption">{editingMedia.label}</span>
+              <span className="instagram-post-caption">
+                {editingMedia.label}
+              </span>
             </button>
           )}
           {posts.map((post) => (
@@ -210,75 +212,6 @@ function InstagramAutomationForm({
         </Button>
       </div>
     </form>
-  );
-}
-
-function InstagramAutomationPreview({ account, media, form }) {
-  const thumbnail = media && mediaThumbnail(media);
-  const label = media
-    ? media.caption
-      ? mediaLabel(media)
-      : media.label
-    : "Select a post to preview it here.";
-
-  return (
-    <aside className="instagram-automation-preview" aria-label="Flow preview">
-      <div className="instagram-preview-heading">
-        <div>
-          <p className="eyebrow">PREVIEW</p>
-          <h2>Your Instagram post</h2>
-        </div>
-        <span className="instagram-preview-live">Live preview</span>
-      </div>
-      <div className="instagram-preview-device">
-        <div className="instagram-preview-device-top" aria-hidden="true">
-          <span />
-        </div>
-        <div className="instagram-preview-post">
-          <div className="instagram-preview-account">
-            <span className="instagram-preview-avatar" aria-hidden="true">
-              {account.username.slice(0, 1).toUpperCase()}
-            </span>
-            <strong>@{account.username}</strong>
-          </div>
-          {media?.mediaType === "VIDEO" && media.mediaUrl ? (
-            <video
-              className="instagram-preview-media"
-              controls
-              muted
-              playsInline
-              poster={media.thumbnailUrl || undefined}
-              src={media.mediaUrl}
-            >
-              Your browser does not support video.
-            </video>
-          ) : thumbnail ? (
-            <img
-              className="instagram-preview-media"
-              src={thumbnail}
-              alt={label}
-            />
-          ) : (
-            <div className="instagram-preview-media instagram-preview-empty">
-              {label}
-            </div>
-          )}
-          <p className="instagram-preview-caption">{label}</p>
-        </div>
-      </div>
-      <div className="instagram-preview-messages">
-        <p>
-          <strong>Public reply</strong>
-          <span>{form.publicReply || "Your public reply will appear here."}</span>
-        </p>
-        <p>
-          <strong>Private message</strong>
-          <span>
-            {form.directMessage || "Your DM or link will appear here."}
-          </span>
-        </p>
-      </div>
-    </aside>
   );
 }
 
@@ -432,11 +365,7 @@ export function InstagramCommentAutomationBuilder({ account }) {
       <div className="instagram-automation-layout">
         <div className="instagram-automation-editor">
           <div className="instagram-editor-heading">
-            <p className="eyebrow">COMMENT AUTOMATION</p>
             <h2>When someone comments on</h2>
-            <p>
-              Choose a post, set a comment trigger, and decide what to send.
-            </p>
           </div>
           {loading && (
             <p className="dashboard-empty" aria-live="polite">
@@ -458,10 +387,20 @@ export function InstagramCommentAutomationBuilder({ account }) {
             />
           )}
         </div>
-        <InstagramAutomationPreview
-          account={account}
-          media={selectedPost || selectedRulePost}
-          form={form}
+        <InstagramPhonePreview
+          username={account.username}
+          media={
+            selectedPost || selectedRulePost
+              ? {
+                  label: selectedPost
+                    ? mediaLabel(selectedPost)
+                    : selectedRulePost.mediaLabel,
+                  src: mediaThumbnail(selectedPost || selectedRulePost),
+                }
+              : null
+          }
+          publicReply={form.publicReply}
+          directMessage={form.directMessage}
         />
       </div>
 

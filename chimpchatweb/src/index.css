@@ -1272,7 +1272,9 @@ select:focus-visible {
   border-radius: var(--radius-sm);
   background: var(--color-white);
   text-decoration: none;
-  transition: border-color 150ms ease, background-color 150ms ease;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
 }
 
 .automation-launch-card:hover {
@@ -1378,6 +1380,7 @@ select:focus-visible {
 .instagram-field-heading {
   display: grid;
   gap: 0.25rem;
+  margin-top: var(--space-2);
 }
 
 .instagram-field-label {
@@ -1508,55 +1511,164 @@ select:focus-visible {
   font-size: var(--text-xs);
 }
 
-.instagram-preview-device {
-  width: min(100%, 24rem);
-  margin: 0 auto;
-  overflow: hidden;
-  border: 0.55rem solid var(--color-ink);
-  border-radius: 2rem;
-  background: var(--color-white);
+.instagram-phone-screen-picker {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-bottom: var(--space-2);
 }
 
-.instagram-preview-device-top {
-  display: grid;
-  min-height: 1.1rem;
-  place-items: center;
-  background: var(--color-ink);
-}
-
-.instagram-preview-device-top span {
-  width: 3rem;
-  height: 0.25rem;
+.instagram-phone-screen-option {
+  min-height: 2rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
   background: var(--color-white);
-}
-
-.instagram-preview-post {
-  overflow: hidden;
-  background: var(--color-white);
-}
-
-.instagram-preview-account {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  min-height: 3rem;
-  padding: 0 var(--space-1);
+  color: var(--color-ink-soft);
+  cursor: pointer;
   font-size: var(--text-xs);
 }
 
-.instagram-preview-avatar {
+.instagram-phone-screen-option[aria-pressed="true"] {
+  border-color: var(--color-ink);
+  background: var(--color-ink);
+  color: var(--color-white);
+}
+
+.instagram-phone-frame {
+  width: min(100%, 18rem);
+  aspect-ratio: 402 / 874;
+  margin: 0 auto;
+  padding: 0.28rem;
+  border: 0.45rem solid var(--color-ink);
+  border-radius: 2.8rem;
+  background: var(--color-ink);
+}
+
+.instagram-phone-display {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 2.1rem;
+  background: var(--color-white);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}
+
+.instagram-phone-statusbar {
+  position: relative;
+  display: flex;
+  min-height: 2rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.9rem;
+  font-size: 0.62rem;
+}
+
+.instagram-phone-island {
+  position: absolute;
+  top: 0.32rem;
+  left: 50%;
+  width: 4.4rem;
+  height: 1.15rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-ink);
+  transform: translateX(-50%);
+}
+
+.instagram-phone-status-icons {
+  letter-spacing: 0.1em;
+}
+
+.instagram-phone-app-header {
+  display: flex;
+  min-height: 2.8rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-1);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.instagram-phone-wordmark {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: -0.06em;
+}
+
+.instagram-phone-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.instagram-phone-icon {
+  display: block;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 auto;
+}
+
+.instagram-phone-content {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: var(--font-body);
+  font-size: 0.68rem;
+}
+
+.instagram-phone-post-header,
+.instagram-phone-chat-header {
+  display: flex;
+  min-height: 2.8rem;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.65rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.instagram-phone-post-header strong,
+.instagram-phone-chat-header strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.instagram-phone-avatar {
   display: grid;
-  width: 1.8rem;
-  height: 1.8rem;
+  width: 1.55rem;
+  height: 1.55rem;
+  flex: 0 0 auto;
   place-items: center;
+  border: 1px solid var(--color-border);
   border-radius: 50%;
   background: var(--color-brand);
   color: var(--color-ink);
+  font-size: 0.65rem;
   font-weight: 700;
 }
 
-.instagram-preview-media {
+.instagram-phone-more {
+  margin-left: auto;
+}
+
+.instagram-phone-feed {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.instagram-phone-media {
   display: block;
   width: 100%;
   aspect-ratio: 1;
@@ -1564,44 +1676,182 @@ select:focus-visible {
   background: var(--color-neutral-surface);
 }
 
-.instagram-preview-empty {
+.instagram-phone-media-empty {
   display: grid;
   place-items: center;
   padding: var(--space-2);
   color: var(--color-ink-muted);
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   text-align: center;
 }
 
-.instagram-preview-caption {
-  min-height: 2.5rem;
+.instagram-phone-action-row {
+  display: flex;
+  min-height: 2.35rem;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0 0.65rem;
+}
+
+.instagram-phone-action-spacer {
+  flex: 1;
+}
+
+.instagram-phone-comments {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0 0.65rem 0.65rem;
+  line-height: 1.4;
+}
+
+.instagram-phone-comments p {
   margin: 0;
-  padding: var(--space-1);
-  color: var(--color-ink-soft);
-  font-size: var(--text-xs);
   overflow-wrap: anywhere;
 }
 
-.instagram-preview-messages {
-  display: grid;
-  gap: var(--space-1);
-  margin-top: var(--space-2);
-}
-
-.instagram-preview-messages p {
-  display: grid;
-  gap: 0.3rem;
-  margin: 0;
-  padding: var(--space-1);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  font-size: var(--text-xs);
-}
-
-.instagram-preview-messages span {
+.instagram-phone-own-comment {
   color: var(--color-ink-soft);
+}
+
+.instagram-phone-muted,
+.instagram-phone-chat-header span,
+.instagram-phone-chat-date,
+.instagram-phone-message-note {
+  color: var(--color-ink-muted);
+  font-size: 0.58rem;
+}
+
+.instagram-phone-chat-header > div {
+  display: grid;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.instagram-phone-chat {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.65rem;
+  overflow-y: auto;
+  padding: 0.75rem 0.65rem;
+}
+
+.instagram-phone-chat-date {
+  margin: 0;
+  text-align: center;
+}
+
+.instagram-phone-message {
+  max-width: 85%;
+  margin: 0;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem 1rem 1rem 0.25rem;
+  background: var(--color-neutral-surface);
+  color: var(--color-ink);
+  line-height: 1.4;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
+}
+
+.instagram-phone-message-own {
+  align-self: flex-end;
+  border-color: var(--color-brand);
+  border-radius: 1rem 1rem 0.25rem 1rem;
+  background: var(--color-brand);
+}
+
+.instagram-phone-message-note {
+  align-self: flex-end;
+  text-align: right;
+}
+
+.instagram-phone-story-chat {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.55rem;
+  overflow-y: auto;
+  padding: 0.65rem;
+}
+
+.instagram-phone-story {
+  width: 62%;
+  max-height: 15rem;
+  overflow: hidden;
+  border: 2px solid var(--color-brand);
+  border-radius: var(--radius-md);
+  background: var(--color-neutral-surface);
+}
+
+.instagram-phone-story .instagram-phone-media {
+  height: 12.5rem;
+  aspect-ratio: auto;
+}
+
+.instagram-phone-story > span {
+  display: block;
+  padding: 0.4rem;
+  font-size: 0.58rem;
+}
+
+.instagram-phone-story-reaction {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: 0.58rem;
+}
+
+.instagram-phone-composer {
+  display: flex;
+  min-height: 2.5rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0.35rem 0.55rem 0.5rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  color: var(--color-ink-muted);
+  font-size: 0.65rem;
+}
+
+.instagram-phone-composer > span:last-child {
+  display: grid;
+  width: 1.25rem;
+  height: 1.25rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-brand);
+  color: var(--color-ink);
+  font-weight: 700;
+}
+
+.instagram-phone-bottom-bar {
+  display: flex;
+  min-height: 2.55rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-around;
+  border-top: 1px solid var(--color-border);
+  font-size: 1.05rem;
+}
+
+.instagram-phone-bottom-bar .instagram-phone-avatar {
+  width: 1.2rem;
+  height: 1.2rem;
+  font-size: 0.5rem;
+}
+
+.instagram-phone-bottom-bar .instagram-phone-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.instagram-phone-bottom-bar .is-current {
+  font-weight: 700;
 }
 
 .instagram-flow-list-heading {
@@ -1662,7 +1912,6 @@ select:focus-visible {
 }
 
 .instagram-automation-trigger > label {
-  display: flex;
   align-items: center;
   gap: var(--space-1);
   color: var(--color-ink-soft);
