@@ -83,6 +83,10 @@ public class ChannelConnectionEntity {
         return provider;
     }
 
+    public String getEncryptedAccessToken() {
+        return encryptedAccessToken;
+    }
+
     public List<ChannelAccountEntity> getAccounts() {
         return List.copyOf(accounts);
     }

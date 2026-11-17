@@ -27,14 +27,17 @@ public class InstagramWebhookBusiness {
     private static final String HMAC_ALGORITHM = "HmacSHA256";
 
     private final ObjectMapper objectMapper;
+    private final InstagramCommentBusiness commentBusiness;
     private final String appSecret;
     private final String verifyToken;
 
     public InstagramWebhookBusiness(
             ObjectMapper objectMapper,
+            InstagramCommentBusiness commentBusiness,
             @Value("${app.oauth.instagram.app-secret:}") String appSecret,
             @Value("${app.webhooks.instagram.verify-token:}") String verifyToken) {
         this.objectMapper = objectMapper;
+        this.commentBusiness = commentBusiness;
         this.appSecret = appSecret;
         this.verifyToken = verifyToken;
     }
@@ -101,22 +104,32 @@ public class InstagramWebhookBusiness {
         JsonNode value = change.path("value");
         if (value.isArray()) {
             for (JsonNode comment : value) {
-                logComment(accountId, comment);
+                receiveComment(accountId, comment);
             }
         } else if (value.isObject()) {
-            logComment(accountId, value);
+            receiveComment(accountId, value);
         }
     }
 
-    private void logComment(String accountId, JsonNode comment) {
+    private void receiveComment(String accountId, JsonNode comment) {
         String commentId = textOrNull(comment.path("id"));
         if (accountId == null || commentId == null) {
             logger.warn("Received an Instagram comment notification without an account or comment ID.");
             return;
         }
 
-        logger.info("Received Instagram comment notification: accountId={}, commentId={}, mediaId={}",
-                accountId, commentId, textOrNull(comment.path("media").path("id")));
+        JsonNode media = comment.path("media");
+        JsonNode from = comment.path("from");
+        commentBusiness.receiveComment(
+                accountId,
+                commentId,
+                textOrNull(media.path("id")),
+                textOrNull(comment.path("parent_id")),
+                textOrNull(from.path("id")),
+                textOrNull(from.path("username")),
+                textOrNull(comment.path("text")),
+                textOrNull(media.path("media_product_type")),
+                textOrNull(comment.path("verb")));
     }
 
     private byte[] computeSignature(byte[] payload) {

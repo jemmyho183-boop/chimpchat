@@ -2,11 +2,12 @@ package com.chimpchat.api.channel.business;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,7 +19,11 @@ import tools.jackson.databind.ObjectMapper;
 
 @Service
 public class MetaInstagramBusiness {
-    private final HttpClient http = HttpClient.newHttpClient();
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(20);
+
+    private final HttpClient http = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(5))
+            .build();
     private final ObjectMapper objectMapper;
     private final String appId;
     private final String appSecret;
@@ -117,6 +122,7 @@ public class MetaInstagramBusiness {
         String body = "subscribed_fields=comments&access_token="
                 + URLEncoder.encode(accessToken, StandardCharsets.UTF_8);
         HttpRequest request = HttpRequest.newBuilder(uri)
+                .timeout(REQUEST_TIMEOUT)
                 .header("Content-Type", "application/x-www-form-urlencoded")
                 .POST(HttpRequest.BodyPublishers.ofString(body))
                 .build();
@@ -156,7 +162,10 @@ public class MetaInstagramBusiness {
     }
 
     private JsonNode getJson(URI uri) {
-        HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
+        HttpRequest request = HttpRequest.newBuilder(uri)
+                .timeout(REQUEST_TIMEOUT)
+                .GET()
+                .build();
         try {
             HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
@@ -237,4 +246,5 @@ public class MetaInstagramBusiness {
             super(message, cause);
         }
     }
+
 }

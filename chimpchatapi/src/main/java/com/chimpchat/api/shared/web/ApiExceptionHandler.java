@@ -1,7 +1,9 @@
 package com.chimpchat.api.shared.web;
 
 import com.chimpchat.api.auth.business.AuthException;
+import com.chimpchat.api.automation.business.InstagramCommentAutomationException;
 import com.chimpchat.api.channel.business.InstagramChannelBusiness;
+import com.chimpchat.api.channel.business.MetaInstagramBusiness;
 import com.chimpchat.api.channel.business.TokenEncryptionBusiness;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +32,22 @@ public class ApiExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(exception.getStatus(), exception.getMessage());
         problem.setTitle("Channel request failed");
         problem.setProperty("code", exception.getCode());
+        return problem;
+    }
+
+    @ExceptionHandler(InstagramCommentAutomationException.class)
+    ProblemDetail handleInstagramCommentAutomationException(InstagramCommentAutomationException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(exception.getStatus(), exception.getMessage());
+        problem.setTitle("Instagram automation request failed");
+        problem.setProperty("code", exception.getCode());
+        return problem;
+    }
+
+    @ExceptionHandler(MetaInstagramBusiness.ChannelException.class)
+    ProblemDetail handleMetaInstagramException(MetaInstagramBusiness.ChannelException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, exception.getMessage());
+        problem.setTitle("Instagram request failed");
+        problem.setProperty("code", "instagram_request_failed");
         return problem;
     }
 

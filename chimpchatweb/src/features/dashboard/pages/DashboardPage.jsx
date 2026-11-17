@@ -43,6 +43,14 @@ export function DashboardPage({ bootstrap }) {
   const instagram = bootstrap.channels.find(
     (channel) => channel.provider === "INSTAGRAM",
   );
+  const automationAccount =
+    selectedChannel?.provider === "INSTAGRAM"
+      ? selectedAccount
+      : instagram?.accounts[0];
+  const automationPath =
+    instagram?.status === "CONNECTED" && automationAccount
+      ? `/dashboard/automations/instagram-comments?account=${encodeURIComponent(automationAccount.id)}`
+      : "/connect-channels";
   const justConnected = params.get("channel_connected") === "instagram";
 
   useEffect(() => {
@@ -147,6 +155,30 @@ export function DashboardPage({ bootstrap }) {
                 </button>
               </div>
             )}
+          </section>
+          <section className="dashboard-section quick-automation-section">
+            <div className="section-heading">
+              <div>
+                <p className="eyebrow">START HERE</p>
+                <h2>Quick automation</h2>
+              </div>
+            </div>
+            <Link className="automation-launch-card" to={automationPath}>
+              <span className="automation-launch-icon" aria-hidden="true">
+                ↗
+              </span>
+              <span className="automation-launch-copy">
+                <strong>Auto-DM links from comments</strong>
+                <span>
+                  Reply to comments and send a message for a specific post or
+                  Reel.
+                </span>
+                <span className="automation-launch-meta">Quick automation</span>
+              </span>
+              <span className="automation-launch-arrow" aria-hidden="true">
+                →
+              </span>
+            </Link>
           </section>
         </div>
       </main>

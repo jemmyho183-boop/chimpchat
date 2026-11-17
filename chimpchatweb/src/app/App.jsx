@@ -10,6 +10,7 @@ import { ApiError } from "../shared/api/client";
 import { appService } from "../shared/services/app-service";
 import { ConnectChannelsPage } from "../features/channels/pages/ConnectChannelsPage";
 import { DashboardPage } from "../features/dashboard/pages/DashboardPage";
+import { InstagramCommentAutomationPage } from "../features/automation/pages/InstagramCommentAutomationPage";
 import { EmailLinkSentPage } from "../features/auth/pages/EmailLinkSentPage";
 import { SignInPage } from "../features/auth/pages/SignInPage";
 import { VerifyEmailPage } from "../features/auth/pages/VerifyEmailPage";
@@ -148,6 +149,16 @@ export function App() {
             element={
               <AuthenticatedRoute requireConnected>
                 {(bootstrap) => <DashboardPage bootstrap={bootstrap} />}
+              </AuthenticatedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/automations/instagram-comments"
+            element={
+              <AuthenticatedRoute requireConnected>
+                {(bootstrap) => (
+                  <InstagramCommentAutomationPage bootstrap={bootstrap} />
+                )}
               </AuthenticatedRoute>
             }
           />
