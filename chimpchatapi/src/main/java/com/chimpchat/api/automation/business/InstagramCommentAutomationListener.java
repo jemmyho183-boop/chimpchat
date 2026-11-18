@@ -1,4 +1,6 @@
 package com.chimpchat.api.automation.business;
+
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -16,5 +18,15 @@ public class InstagramCommentAutomationListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void process(InstagramCommentReceivedEvent event) {
         automationBusiness.processComment(event.commentId());
+    }
+
+    @Async
+    @EventListener
+    public void processReply(InstagramDirectMessageReceivedEvent event) {
+        automationBusiness.processDirectMessageReply(
+                event.instagramAccountId(),
+                event.commenterId(),
+                event.replyToMessageId(),
+                event.receivedAt());
     }
 }

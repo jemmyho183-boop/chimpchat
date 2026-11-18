@@ -1,6 +1,9 @@
 package com.chimpchat.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -50,7 +53,7 @@ class InstagramCommentAutomationMetaBusinessTests {
     }
 
     @Test
-    void sendsPrivateRepliesThroughTheInstagramAccountMessagesEndpoint() throws IOException {
+    void sendsTextOnlyPrivateRepliesThroughTheInstagramAccountMessagesEndpoint() throws IOException {
         AtomicReference<String> requestPath = new AtomicReference<>();
         AtomicReference<String> authorization = new AtomicReference<>();
         AtomicReference<String> contentType = new AtomicReference<>();
@@ -74,7 +77,10 @@ class InstagramCommentAutomationMetaBusinessTests {
             InstagramCommentAutomationMetaBusiness business = createBusiness(server);
             InstagramCommentAutomationMetaBusiness.MetaReply reply =
                     business.sendPrivateReply(
-                            "instagram-account-id", "comment-id", "user-token", "Here: https://example.test/a&b");
+                            "instagram-account-id",
+                            "comment-id",
+                            "user-token",
+                            "Thanks for commenting!");
 
             assertEquals("dm-id", reply.id());
             assertEquals("/v26.0/instagram-account-id/messages", requestPath.get());
@@ -82,9 +88,70 @@ class InstagramCommentAutomationMetaBusinessTests {
             assertEquals("application/json", contentType.get());
             var payload = new ObjectMapper().readTree(requestBody.get());
             assertEquals("comment-id", payload.path("recipient").path("comment_id").asText());
-            assertEquals(
-                    "Here: https://example.test/a&b",
-                    payload.path("message").path("text").asText());
+            assertEquals("Thanks for commenting!", payload.path("message").path("text").asText());
+            assertTrue(payload.path("message").path("attachment").isMissingNode());
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void sendsLinkButtonsAsGenericTemplatesToTheInstagramMessageRecipient() throws IOException {
+        AtomicReference<String> requestBody = new AtomicReference<>();
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/v26.0/instagram-account-id/messages", exchange -> {
+            requestBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            byte[] response = "{\"message_id\":\"button-message-id\"}".getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.length);
+            try (var responseBody = exchange.getResponseBody()) {
+                responseBody.write(response);
+            }
+        });
+        server.start();
+
+        try {
+            InstagramCommentAutomationMetaBusiness business = createBusiness(server);
+            InstagramCommentAutomationMetaBusiness.MetaReply reply =
+                    business.sendLinkButtonFollowUp(
+                            "instagram-account-id",
+                            "commenter-id",
+                            "user-token",
+                            "Shop now",
+                            "https://example.test/a&b");
+
+            assertEquals("button-message-id", reply.id());
+            var payload = new ObjectMapper().readTree(requestBody.get());
+            assertEquals("commenter-id", payload.path("recipient").path("id").asText());
+            var template = payload.path("message").path("attachment").path("payload");
+            assertEquals("template", payload.path("message").path("attachment").path("type").asText());
+            assertEquals("generic", template.path("template_type").asText());
+            assertEquals("Shop now", template.path("elements").get(0).path("title").asText());
+            var button = template.path("elements").get(0).path("buttons").get(0);
+            assertEquals("web_url", button.path("type").asText());
+            assertEquals("https://example.test/a&b", button.path("url").asText());
+            assertEquals("Shop now", button.path("title").asText());
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void rejectsButtonLabelsLongerThanInstagramAllows() throws IOException {
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.start();
+
+        try {
+            InstagramCommentAutomationMetaBusiness business = createBusiness(server);
+            var exception = assertThrows(
+                    InstagramCommentAutomationMetaBusiness.MetaRequestException.class,
+                    () -> business.sendLinkButtonFollowUp(
+                            "instagram-account-id",
+                            "commenter-id",
+                            "user-token",
+                            "This label is definitely over twenty characters",
+                            "https://example.test"));
+            assertFalse(exception.isOutcomeUnknown());
         } finally {
             server.stop(0);
         }

@@ -1,10 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  Link,
-  Navigate,
-  useNavigate,
-  useSearchParams,
-} from "react-router-dom";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { DashboardHeader } from "../components/DashboardHeader";
 import { DashboardSidebar } from "../components/DashboardSidebar";
 import { ConnectedChannelsList } from "../../channels/components/ConnectedChannelsList";
@@ -12,7 +7,15 @@ import { authService } from "../../../shared/services/auth-service";
 import { channelService } from "../../../shared/services/channel-service";
 import { useToast } from "../../../shared/components/toast-context";
 
-const navigationItems = [{ label: "Home", to: "/dashboard", icon: "home" }];
+const navigationItems = [
+  { label: "Home", to: "/dashboard", icon: "home", end: true },
+  {
+    label: "Automations",
+    to: "/dashboard/automations",
+    icon: "automation",
+    end: true,
+  },
+];
 
 export function DashboardPage({ bootstrap }) {
   const [params] = useSearchParams();
@@ -52,6 +55,14 @@ export function DashboardPage({ bootstrap }) {
       ? `/dashboard/automations/instagram-comments?account=${encodeURIComponent(automationAccount.id)}`
       : "/connect-channels";
   const justConnected = params.get("channel_connected") === "instagram";
+  const displayName =
+    (bootstrap.user.email ?? "")
+      .split("@")[0]
+      .replace(/[._-]+/g, " ")
+      .replace(/\b\w/g, (letter) => letter.toUpperCase()) || "there";
+  const instagramUsername = automationAccount?.username
+    ? `@${automationAccount.username}`
+    : "Connect Instagram";
 
   useEffect(() => {
     if (justConnected) {
@@ -111,12 +122,42 @@ export function DashboardPage({ bootstrap }) {
           </Link>
         </div>
 
-        <div className="dashboard-page-content">
+        <div className="dashboard-page-content dashboard-home-content">
           {error && (
             <p className="inline-notice notice-error page-notice" role="alert">
               {error}
             </p>
           )}
+
+          <section className="dashboard-welcome">
+            <h1>Hello, {displayName}!</h1>
+            <div className="dashboard-summary">
+              <span>{connectedAccountCount} connected channel</span>
+              <span>{instagramUsername}</span>
+              <Link to="/connect-channels">See insights</Link>
+            </div>
+          </section>
+
+          <section
+            className="dashboard-template-section"
+            aria-labelledby="templates-heading"
+          >
+            <div className="dashboard-template-heading">
+              <h2 id="templates-heading">Start here</h2>
+              <span className="dashboard-template-link">
+                Explore all Templates
+              </span>
+            </div>
+            <div className="dashboard-template-grid">
+              <Link className="dashboard-template-card" to={automationPath}>
+                <strong>Auto-DM links from comments</strong>
+                <span className="dashboard-template-meta">
+                  <span aria-hidden="true">ϟ</span> Quick Automation
+                </span>
+                <span className="dashboard-template-badge">POPULAR</span>
+              </Link>
+            </div>
+          </section>
 
           <section
             className="dashboard-section"
@@ -126,9 +167,7 @@ export function DashboardPage({ bootstrap }) {
               <div>
                 <p className="eyebrow">CONNECTED CHANNELS</p>
                 <h2 id="channels-heading">
-                  {selectedAccount
-                    ? selectedAccount.username
-                    : "Your accounts"}
+                  {selectedAccount ? selectedAccount.username : "Your accounts"}
                 </h2>
               </div>
               <span className="count-label">

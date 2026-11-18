@@ -12,4 +12,6 @@ public record InstagramCommentAutomationRequestDto(
         @Size(max = 100) String keyword,
         @NotBlank @Size(max = 2200) String publicReply,
         @NotBlank @Size(max = 1000) String directMessage,
+        @Size(max = 20) String directMessageLinkText,
+        @Size(max = 900) String directMessageLinkUrl,
         boolean enabled) {}

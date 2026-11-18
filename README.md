@@ -102,22 +102,22 @@ Use this section as the shared reference for public-site UI and social graphics.
 
 ### Color palette
 
-| Token | Hex | Use |
-| --- | --- | --- |
-| Brand yellow | `#ffe01b` | Primary accent, calls to action, highlights |
+| Token              | Hex       | Use                                         |
+| ------------------ | --------- | ------------------------------------------- |
+| Brand yellow       | `#ffe01b` | Primary accent, calls to action, highlights |
 | Brand yellow hover | `#efd000` | Hover state where a darker yellow is needed |
-| Ink | `#171717` | Primary text, dark logo, strong outlines |
-| Soft ink | `#55534b` | Secondary text |
-| Muted ink | `#77756e` | Supporting text, placeholders |
-| White | `#ffffff` | Default page and surface background |
-| Border | `#e7e5dc` | Dividers and control borders |
-| Neutral surface | `#f7f6f1` | Subtle neutral fills |
-| Success | `#315d3b` | Success text and icons |
-| Success surface | `#edf5eb` | Success messages |
-| Error | `#8d2924` | Error text and icons |
-| Error surface | `#fbefed` | Error messages |
-| Info | `#55534b` | Informational text |
-| Warning | `#8a6400` | Warning text |
+| Ink                | `#171717` | Primary text, dark logo, strong outlines    |
+| Soft ink           | `#55534b` | Secondary text                              |
+| Muted ink          | `#77756e` | Supporting text, placeholders               |
+| White              | `#ffffff` | Default page and surface background         |
+| Border             | `#e7e5dc` | Dividers and control borders                |
+| Neutral surface    | `#E2E9ED` | Subtle neutral fills                        |
+| Success            | `#315d3b` | Success text and icons                      |
+| Success surface    | `#edf5eb` | Success messages                            |
+| Error              | `#8d2924` | Error text and icons                        |
+| Error surface      | `#fbefed` | Error messages                              |
+| Info               | `#55534b` | Informational text                          |
+| Warning            | `#8a6400` | Warning text                                |
 
 Use yellow as an accent with ink text, not as a substitute for readable text color. Keep page backgrounds white and use neutral/status colors for their intended roles. For social media, preserve contrast and verify text legibility at the final displayed size.
 
@@ -129,31 +129,31 @@ Use yellow as an accent with ink text, not as a substitute for readable text col
 - **Brand wordmark:** weight `700`, tight letter spacing (`-0.06em`).
 - **Eyebrows/labels:** small, uppercase, semibold, and spaced lettering.
 
-| Token | Size |
-| --- | --- |
-| `--text-xs` | `0.75rem` |
-| `--text-sm` | `0.875rem` |
-| `--text-base` | `1rem` |
-| `--text-lg` | `1.125rem` |
+| Token               | Size                            |
+| ------------------- | ------------------------------- |
+| `--text-xs`         | `0.75rem`                       |
+| `--text-sm`         | `0.875rem`                      |
+| `--text-base`       | `1rem`                          |
+| `--text-lg`         | `1.125rem`                      |
 | `--text-subheading` | `clamp(1.25rem, 2.4vw, 1.5rem)` |
-| `--text-heading` | `clamp(1.9rem, 5vw, 2.8rem)` |
+| `--text-heading`    | `clamp(1.9rem, 5vw, 2.8rem)`    |
 
 ### Layout and components
 
 Reuse the web UI spacing and corner-radius tokens when designing matching screens:
 
-| Token | Value |
-| --- | --- |
-| `--space-1` | `0.5rem` |
-| `--space-2` | `1rem` |
-| `--space-3` | `1.5rem` |
-| `--space-4` | `2rem` |
-| `--space-5` | `3rem` |
-| `--space-6` | `4rem` |
-| `--radius-sm` | `0.75rem` |
-| `--radius-md` | `1.25rem` |
-| `--radius-lg` | `1.75rem` |
-| `--radius-pill` | `999px` |
+| Token           | Value     |
+| --------------- | --------- |
+| `--space-1`     | `0.5rem`  |
+| `--space-2`     | `1rem`    |
+| `--space-3`     | `1.5rem`  |
+| `--space-4`     | `2rem`    |
+| `--space-5`     | `3rem`    |
+| `--space-6`     | `4rem`    |
+| `--radius-sm`   | `0.75rem` |
+| `--radius-md`   | `1.25rem` |
+| `--radius-lg`   | `1.75rem` |
+| `--radius-pill` | `999px`   |
 
 Prefer clean white layouts, restrained borders, rounded controls, and yellow primary actions. Keep layouts responsive, use semantic hierarchy, provide visible keyboard focus, and avoid shadows to match the current UI.
 

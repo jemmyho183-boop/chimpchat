@@ -107,19 +107,19 @@ public class MetaInstagramBusiness {
             throw new ChannelException("No Instagram accounts were shared with this app.");
         }
         for (InstagramAccount account : accounts) {
-            subscribeToCommentWebhooks(accessToken, account);
+            subscribeToInstagramWebhooks(accessToken, account);
         }
 
         return new MetaConnection(businessId, accounts, accessToken);
     }
 
-    private void subscribeToCommentWebhooks(String accessToken, InstagramAccount account) {
+    private void subscribeToInstagramWebhooks(String accessToken, InstagramAccount account) {
         URI uri = UriComponentsBuilder.fromUriString(graphUri)
                 .pathSegment(account.id(), "subscribed_apps")
                 .build()
                 .encode()
                 .toUri();
-        String body = "subscribed_fields=comments&access_token="
+        String body = "subscribed_fields=comments%2Cmessages&access_token="
                 + URLEncoder.encode(accessToken, StandardCharsets.UTF_8);
         HttpRequest request = HttpRequest.newBuilder(uri)
                 .timeout(REQUEST_TIMEOUT)
@@ -133,15 +133,16 @@ public class MetaInstagramBusiness {
             }
             if (!objectMapper.readTree(response.body()).path("success").asBoolean(false)) {
                 throw new WebhookSubscriptionException(
-                        "Meta did not confirm comment notifications for Instagram account " + account.id() + ".");
+                        "Meta did not confirm comment and message notifications for Instagram account "
+                                + account.id() + ".");
             }
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new WebhookSubscriptionException(
-                    "Instagram comment notification setup was interrupted.", exception);
+                    "Instagram comment and message notification setup was interrupted.", exception);
         } catch (IOException exception) {
             throw new WebhookSubscriptionException(
-                    "Could not subscribe the Instagram account to comment notifications.", exception);
+                    "Could not subscribe the Instagram account to comment and message notifications.", exception);
         }
     }
 

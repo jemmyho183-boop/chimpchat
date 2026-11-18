@@ -19,7 +19,7 @@ const channelErrors = {
   instagram_connection_failed:
     "We could not save the Instagram connection. Please try again.",
   instagram_webhook_subscription_failed:
-    "Could not enable Instagram comment notifications. Check the Meta comments webhook and instagram_manage_comments permission, then try connecting again.",
+    "Could not enable Instagram comment and message notifications. Check the Meta comments and messages webhooks and required Instagram permissions, then try connecting again.",
   token_encryption_unavailable: "Secure channel storage is not configured yet.",
   channel_credentials_unavailable:
     "The saved Instagram connection needs attention. Please connect Instagram again.",

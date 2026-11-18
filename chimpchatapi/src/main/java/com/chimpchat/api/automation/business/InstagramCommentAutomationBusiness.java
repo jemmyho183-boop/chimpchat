@@ -1,5 +1,8 @@
 package com.chimpchat.api.automation.business;
 
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -21,9 +24,11 @@ import com.chimpchat.api.workspace.business.WorkspaceBusiness;
 import com.chimpchat.api.workspace.entity.WorkspaceEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
 public class InstagramCommentAutomationBusiness {
@@ -37,6 +42,7 @@ public class InstagramCommentAutomationBusiness {
     private final WorkspaceBusiness workspaceBusiness;
     private final TokenEncryptionBusiness tokenEncryptionBusiness;
     private final InstagramCommentAutomationMetaBusiness metaBusiness;
+    private final TransactionTemplate transactionTemplate;
 
     public InstagramCommentAutomationBusiness(
             InstagramCommentAutomationRepository automationRepository,
@@ -45,7 +51,8 @@ public class InstagramCommentAutomationBusiness {
             ChannelConnectionRepository connectionRepository,
             WorkspaceBusiness workspaceBusiness,
             TokenEncryptionBusiness tokenEncryptionBusiness,
-            InstagramCommentAutomationMetaBusiness metaBusiness) {
+            InstagramCommentAutomationMetaBusiness metaBusiness,
+            TransactionTemplate transactionTemplate) {
         this.automationRepository = automationRepository;
         this.executionRepository = executionRepository;
         this.commentRepository = commentRepository;
@@ -53,6 +60,7 @@ public class InstagramCommentAutomationBusiness {
         this.workspaceBusiness = workspaceBusiness;
         this.tokenEncryptionBusiness = tokenEncryptionBusiness;
         this.metaBusiness = metaBusiness;
+        this.transactionTemplate = transactionTemplate;
     }
 
     @Transactional(readOnly = true)
@@ -111,7 +119,9 @@ public class InstagramCommentAutomationBusiness {
                         request.matchType(),
                         normalizedKeyword(request),
                         request.publicReply().trim(),
-                        request.directMessage().trim()));
+                        request.directMessage().trim(),
+                        normalizedLinkText(request),
+                        normalizedLinkUrl(request)));
         return toResponse(automation);
     }
 
@@ -139,6 +149,8 @@ public class InstagramCommentAutomationBusiness {
                 normalizedKeyword(request),
                 request.publicReply().trim(),
                 request.directMessage().trim(),
+                normalizedLinkText(request),
+                normalizedLinkUrl(request),
                 request.enabled());
         return toResponse(automationRepository.save(automation));
     }
@@ -194,16 +206,97 @@ public class InstagramCommentAutomationBusiness {
             }
 
             try {
-                metaBusiness.sendPrivateReply(
+                boolean hasLinkButton = automation.getDirectMessageLinkUrl() != null
+                        && !automation.getDirectMessageLinkUrl().isBlank();
+                InstagramCommentAutomationMetaBusiness.MetaReply reply = metaBusiness.sendPrivateReply(
                         comment.getInstagramAccountId(),
-                        comment.getExternalCommentId(), accessToken, automation.getDirectMessage());
-                execution.markDirectMessageSent();
+                        comment.getExternalCommentId(),
+                        accessToken,
+                        automation.getDirectMessage(),
+                        hasLinkButton ? automation.getDirectMessageLinkText() : null,
+                        hasLinkButton ? automation.getDirectMessageLinkUrl() : null);
+                execution.markDirectMessageSent(
+                        reply.id(),
+                        hasLinkButton);
             } catch (InstagramCommentAutomationMetaBusiness.MetaRequestException exception) {
                 execution.markDirectMessageFailed(exception.isOutcomeUnknown());
                 logger.warn("Instagram DM failed for automation {}: {}",
                         automation.getId(), exception.getMessage());
             }
         }
+    }
+
+    public void processDirectMessageReply(
+            String instagramAccountId,
+            String commenterId,
+            String replyToMessageId,
+            Instant receivedAt) {
+        if (instagramAccountId == null || instagramAccountId.isBlank()
+                || commenterId == null || commenterId.isBlank()
+                || receivedAt == null) {
+            return;
+        }
+        if (receivedAt.isBefore(Instant.now().minus(Duration.ofHours(24)))) {
+            return;
+        }
+
+        FollowUpCandidate candidate = transactionTemplate.execute(status -> {
+            List<InstagramCommentAutomationExecutionEntity> executions =
+                    executionRepository.findPendingLinkButtonReply(
+                            instagramAccountId,
+                            commenterId,
+                            replyToMessageId,
+                            PageRequest.of(0, 1));
+            if (executions.isEmpty()) {
+                return null;
+            }
+            InstagramCommentAutomationExecutionEntity execution = executions.get(0);
+            execution.markLinkButtonProcessing();
+            executionRepository.saveAndFlush(execution);
+            InstagramCommentAutomationEntity automation = execution.getAutomation();
+            return new FollowUpCandidate(
+                    execution.getId(),
+                    automation.getInstagramAccountId(),
+                    execution.getComment().getCommenterId(),
+                    automation.getConnection().getEncryptedAccessToken(),
+                    automation.getDirectMessageLinkText(),
+                    automation.getDirectMessageLinkUrl());
+        });
+        if (candidate == null) {
+            return;
+        }
+
+        try {
+            String accessToken = tokenEncryptionBusiness.decrypt(candidate.encryptedAccessToken());
+            metaBusiness.sendLinkButtonFollowUp(
+                    candidate.instagramAccountId(),
+                    candidate.commenterId(),
+                    accessToken,
+                    candidate.buttonText(),
+                    candidate.linkUrl());
+            updateLinkButtonStatus(candidate.executionId(), true, false);
+        } catch (TokenEncryptionBusiness.ChannelException exception) {
+            updateLinkButtonStatus(candidate.executionId(), false, false);
+            logger.warn("Instagram link button could not load its account credentials.");
+        } catch (InstagramCommentAutomationMetaBusiness.MetaRequestException exception) {
+            updateLinkButtonStatus(candidate.executionId(), false, exception.isOutcomeUnknown());
+            logger.warn("Instagram link button failed for automation execution {}: {}",
+                    candidate.executionId(), exception.getMessage());
+        }
+    }
+
+    private void updateLinkButtonStatus(UUID executionId, boolean sent, boolean outcomeUnknown) {
+        transactionTemplate.executeWithoutResult(status -> {
+            InstagramCommentAutomationExecutionEntity execution = executionRepository.findById(executionId)
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Instagram automation execution disappeared before its link button was recorded."));
+            if (sent) {
+                execution.markLinkButtonSent();
+            } else {
+                execution.markLinkButtonFailed(outcomeUnknown);
+            }
+            executionRepository.save(execution);
+        });
     }
 
     private ChannelConnectionEntity requireConnection(WorkspaceEntity workspace, String accountId) {
@@ -234,6 +327,58 @@ public class InstagramCommentAutomationBusiness {
                     HttpStatus.BAD_REQUEST, "keyword_required",
                     "Add a keyword or choose the any-comment trigger.");
         }
+        if (request.directMessage().trim().getBytes(StandardCharsets.UTF_8).length > 1000) {
+            throw invalidDmMessage("The private DM must fit within Instagram's 1,000-byte message limit.");
+        }
+        boolean hasLinkText = request.directMessageLinkText() != null
+                && !request.directMessageLinkText().isBlank();
+        boolean hasLinkUrl = request.directMessageLinkUrl() != null
+                && !request.directMessageLinkUrl().isBlank();
+        if (hasLinkText != hasLinkUrl) {
+            throw invalidDmLink("Provide both the DM link text and URL, or leave both empty.");
+        }
+        if (hasLinkUrl) {
+            if (request.directMessageLinkText().trim().length() > 20) {
+                throw invalidDmLink("The link button label must be 20 characters or fewer.");
+            }
+            validateDmLinkUrl(request.directMessageLinkUrl().trim());
+        }
+    }
+
+    private InstagramCommentAutomationException invalidDmMessage(String message) {
+        return new InstagramCommentAutomationException(
+                HttpStatus.BAD_REQUEST, "invalid_dm_message", message);
+    }
+
+    private void validateDmLinkUrl(String value) {
+        java.net.URI uri;
+        try {
+            uri = java.net.URI.create(value);
+        } catch (IllegalArgumentException exception) {
+            throw invalidDmLink("Use a valid HTTP or HTTPS URL for the DM link.");
+        }
+        String scheme = uri.getScheme();
+        if (uri.getHost() == null || uri.getRawUserInfo() != null
+                || !("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme))) {
+            throw invalidDmLink("Use a valid HTTP or HTTPS URL for the DM link.");
+        }
+    }
+
+    private InstagramCommentAutomationException invalidDmLink(String message) {
+        return new InstagramCommentAutomationException(
+                HttpStatus.BAD_REQUEST, "invalid_dm_link", message);
+    }
+
+    private String normalizedLinkText(InstagramCommentAutomationRequestDto request) {
+        return request.directMessageLinkText() == null || request.directMessageLinkText().isBlank()
+                ? null
+                : request.directMessageLinkText().trim();
+    }
+
+    private String normalizedLinkUrl(InstagramCommentAutomationRequestDto request) {
+        return request.directMessageLinkUrl() == null || request.directMessageLinkUrl().isBlank()
+                ? null
+                : request.directMessageLinkUrl().trim();
     }
 
     private String normalizedKeyword(InstagramCommentAutomationRequestDto request) {
@@ -261,6 +406,8 @@ public class InstagramCommentAutomationBusiness {
                 automation.getKeyword(),
                 automation.getPublicReply(),
                 automation.getDirectMessage(),
+                automation.getDirectMessageLinkText(),
+                automation.getDirectMessageLinkUrl(),
                 automation.isEnabled(),
                 automation.getCreatedAt());
     }
@@ -269,4 +416,12 @@ public class InstagramCommentAutomationBusiness {
         return new InstagramCommentAutomationException(
                 HttpStatus.NOT_FOUND, "automation_not_found", "The Instagram automation was not found.");
     }
+
+    private record FollowUpCandidate(
+            UUID executionId,
+            String instagramAccountId,
+            String commenterId,
+            String encryptedAccessToken,
+            String buttonText,
+            String linkUrl) {}
 }
