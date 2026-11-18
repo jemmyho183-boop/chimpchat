@@ -29,6 +29,25 @@ export function DashboardSidebar({ items, onSignOut }) {
                 <path d="M5 9v11h14V9M9 20v-6h6v6" />
               </svg>
             )}
+            {item.icon === "automation" && (
+              <svg
+                className="dashboard-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path d="M4 7h10" />
+                <path d="M4 17h6" />
+                <circle cx="17" cy="7" r="3" />
+                <circle cx="13" cy="17" r="3" />
+                <path d="M20 7h1M3 17h1" />
+              </svg>
+            )}
             <span>{item.label}</span>
           </NavLink>
         ))}

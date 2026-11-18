@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "../../../shared/components/Button";
 import { InstagramPhonePreview } from "../../../shared/components/InstagramPhonePreview";
 import { useToast } from "../../../shared/components/toast-context";
@@ -180,24 +181,24 @@ function InstagramAutomationForm({
           rows={3}
           required
           disabled={saving}
-          placeholder="Thanks for commenting! Here is the link you asked for."
+          placeholder="Thanks for commenting! Reply and I’ll send the link."
         />
       </label>
       <label>
-        Link text (optional)
+        Link button label (optional)
         <input
           type="text"
           value={form.directMessageLinkText}
           onChange={(event) =>
             onFormChange({ ...form, directMessageLinkText: event.target.value })
           }
-          maxLength={100}
+          maxLength={20}
           disabled={saving}
-          placeholder="Shop the collection"
+          placeholder="Shop now"
         />
       </label>
       <label>
-        Link URL (optional)
+        Button destination URL (optional)
         <input
           type="url"
           value={form.directMessageLinkUrl}
@@ -210,8 +211,10 @@ function InstagramAutomationForm({
         />
       </label>
       <p className="instagram-automation-help">
-        Instagram sends the link as clickable URL text in the private reply, not as a button.
-        Fill in both link fields or leave both empty.
+        Instagram sends your text first. After the commenter replies, it sends
+        one follow-up with this button within 24 hours. Button labels can be up
+        to 20 characters. Button cards aren’t available in Instagram web. Fill
+        in both link fields or leave both empty.
       </p>
 
       {error && (
@@ -250,6 +253,7 @@ function InstagramAutomationForm({
 }
 
 export function InstagramCommentAutomationBuilder({ account }) {
+  const [params] = useSearchParams();
   const accountId = account.id;
   const [posts, setPosts] = useState([]);
   const [selectedMediaId, setSelectedMediaId] = useState("");
@@ -297,6 +301,7 @@ export function InstagramCommentAutomationBuilder({ account }) {
   const loading = loadedAccountId !== accountId;
   const visiblePosts = loadedAccountId === accountId ? posts : [];
   const visibleAutomations = loadedAccountId === accountId ? automations : [];
+  const editId = params.get("edit");
   const selectedPost = visiblePosts.find((post) => post.id === selectedMediaId);
   const selectedRulePost =
     editing?.mediaId === selectedMediaId ? editing : null;
@@ -362,6 +367,12 @@ export function InstagramCommentAutomationBuilder({ account }) {
     });
     setError("");
   }
+
+  useEffect(() => {
+    if (!editId || visibleAutomations.length === 0) return;
+    const automation = visibleAutomations.find((item) => item.id === editId);
+    if (automation && editing?.id !== automation.id) editAutomation(automation);
+  }, [editId, visibleAutomations, editing?.id]);
 
   async function toggleAutomation(automation) {
     setError("");
@@ -451,7 +462,7 @@ export function InstagramCommentAutomationBuilder({ account }) {
           <div className="instagram-flow-list-heading">
             <div>
               <p className="eyebrow">YOUR FLOWS</p>
-              <h2>Existing comment flows</h2>
+              <h2>Active automations</h2>
             </div>
             <span className="count-label">
               {visibleAutomations.length}{" "}
@@ -488,7 +499,9 @@ export function InstagramCommentAutomationBuilder({ account }) {
                 </p>
                 {automation.directMessageLinkUrl && (
                   <p>
-                    <strong>{automation.directMessageLinkText}</strong>
+                    <strong>
+                      Follow-up button: {automation.directMessageLinkText}
+                    </strong>
                     <span>{automation.directMessageLinkUrl}</span>
                   </p>
                 )}

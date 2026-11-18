@@ -8,7 +8,7 @@ import { useToast } from "../../../shared/components/toast-context";
 
 const navigationItems = [
   { label: "Home", to: "/dashboard", icon: "home", end: true },
-  { label: "Automations", to: "/dashboard/automations/instagram-comments" },
+  { label: "Automations", to: "/dashboard/automations", icon: "automation" },
 ];
 
 export function InstagramCommentAutomationPage({ bootstrap }) {
@@ -45,7 +45,8 @@ export function InstagramCommentAutomationPage({ bootstrap }) {
         <div className="dashboard-pagebar instagram-automation-pagebar">
           <div>
             <p className="eyebrow">{bootstrap.workspace.name}</p>
-            <h1>Auto-DM links from comments</h1>
+            <h1>Automations</h1>
+            <p className="instagram-automation-account-label">@{account.username}</p>
           </div>
         </div>
         <div className="dashboard-page-content instagram-automation-page-content">

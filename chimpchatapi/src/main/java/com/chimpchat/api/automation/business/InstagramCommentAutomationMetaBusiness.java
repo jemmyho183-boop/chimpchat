@@ -53,8 +53,16 @@ public class InstagramCommentAutomationMetaBusiness {
             String instagramAccountId,
             String commentId,
             String accessToken,
+            String message) {
+        return sendPrivateReply(instagramAccountId, commentId, accessToken, message, null, null);
+    }
+
+    public MetaReply sendPrivateReply(
+            String instagramAccountId,
+            String commentId,
+            String accessToken,
             String message,
-            String linkText,
+            String buttonText,
             String linkUrl) {
         URI uri = UriComponentsBuilder.fromUriString(graphUri)
                 .pathSegment(instagramAccountId, "messages")
@@ -63,18 +71,66 @@ public class InstagramCommentAutomationMetaBusiness {
                 .toUri();
         var payload = objectMapper.createObjectNode();
         payload.putObject("recipient").put("comment_id", commentId);
-        String messageText = message;
-        if (linkUrl != null && !linkUrl.isBlank()) {
-            messageText += "\n\n" + linkText + ": " + linkUrl;
+        var messageNode = payload.putObject("message");
+        if (buttonText == null || buttonText.isBlank()) {
+            messageNode.put("text", message);
+        } else {
+            var attachment = messageNode.putObject("attachment");
+            attachment.put("type", "template");
+            var template = attachment.putObject("payload");
+            template.put("template_type", "generic");
+            var element = template.putArray("elements").addObject();
+            element.put("title", message);
+            element.putArray("buttons")
+                    .addObject()
+                    .put("type", "web_url")
+                    .put("url", linkUrl)
+                    .put("title", buttonText);
         }
-        payload.putObject("message").put("text", messageText);
-        HttpRequest request = HttpRequest.newBuilder(uri)
+        HttpRequest request = messageRequest(uri, accessToken, payload);
+        return postMessageRequest(request, "message_id", "private reply");
+    }
+
+    public MetaReply sendLinkButtonFollowUp(
+            String instagramAccountId,
+            String recipientId,
+            String accessToken,
+            String buttonText,
+            String linkUrl) {
+        if (buttonText == null || buttonText.isBlank() || buttonText.length() > 20) {
+            throw new MetaRequestException(
+                    "Instagram URL button text must be between 1 and 20 characters.", false);
+        }
+        URI uri = UriComponentsBuilder.fromUriString(graphUri)
+                .pathSegment(instagramAccountId, "messages")
+                .build()
+                .encode()
+                .toUri();
+        var payload = objectMapper.createObjectNode();
+        payload.putObject("recipient").put("id", recipientId);
+        var message = payload.putObject("message");
+        var attachment = message.putObject("attachment");
+        attachment.put("type", "template");
+        var template = attachment.putObject("payload");
+        template.put("template_type", "generic");
+        var element = template.putArray("elements").addObject();
+        element.put("title", buttonText);
+        element.putArray("buttons")
+                .addObject()
+                .put("type", "web_url")
+                .put("url", linkUrl)
+                .put("title", buttonText);
+        HttpRequest request = messageRequest(uri, accessToken, payload);
+        return postMessageRequest(request, "message_id", "link button follow-up");
+    }
+
+    private HttpRequest messageRequest(URI uri, String accessToken, JsonNode payload) {
+        return HttpRequest.newBuilder(uri)
                 .timeout(REQUEST_TIMEOUT)
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + accessToken)
                 .POST(HttpRequest.BodyPublishers.ofString(payload.toString()))
                 .build();
-        return postMessageRequest(request, "message_id", "private reply");
     }
 
     public List<InstagramMedia> listMedia(String instagramAccountId, String accessToken) {

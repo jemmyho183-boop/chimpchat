@@ -11,6 +11,7 @@ import { appService } from "../shared/services/app-service";
 import { ConnectChannelsPage } from "../features/channels/pages/ConnectChannelsPage";
 import { DashboardPage } from "../features/dashboard/pages/DashboardPage";
 import { InstagramCommentAutomationPage } from "../features/automation/pages/InstagramCommentAutomationPage";
+import { AutomationsPage } from "../features/automation/pages/AutomationsPage";
 import { EmailLinkSentPage } from "../features/auth/pages/EmailLinkSentPage";
 import { SignInPage } from "../features/auth/pages/SignInPage";
 import { VerifyEmailPage } from "../features/auth/pages/VerifyEmailPage";
@@ -149,6 +150,14 @@ export function App() {
             element={
               <AuthenticatedRoute requireConnected>
                 {(bootstrap) => <DashboardPage bootstrap={bootstrap} />}
+              </AuthenticatedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/automations"
+            element={
+              <AuthenticatedRoute requireConnected>
+                {(bootstrap) => <AutomationsPage bootstrap={bootstrap} />}
               </AuthenticatedRoute>
             }
           />

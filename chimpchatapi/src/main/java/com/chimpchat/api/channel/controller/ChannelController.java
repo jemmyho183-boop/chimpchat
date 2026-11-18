@@ -109,7 +109,8 @@ public class ChannelController {
             instagramChannelBusiness.connect(ownerId, connection);
             return popupRedirect("success", null);
         } catch (WebhookSubscriptionException exception) {
-            logger.warn("Instagram comment notifications could not be subscribed: {}", exception.getMessage());
+            logger.warn("Instagram comment and message notifications could not be subscribed: {}",
+                    exception.getMessage());
             return popupRedirect("error", "instagram_webhook_subscription_failed");
         } catch (MetaInstagramBusiness.ChannelException exception) {
             logger.warn("Instagram connection failed: {}", exception.getMessage());

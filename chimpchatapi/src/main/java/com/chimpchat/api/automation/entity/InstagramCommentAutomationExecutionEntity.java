@@ -35,6 +35,12 @@ public class InstagramCommentAutomationExecutionEntity {
     @Column(name = "direct_message_status", nullable = false, length = 16)
     private String directMessageStatus = "PENDING";
 
+    @Column(name = "direct_message_id", length = 255)
+    private String directMessageId;
+
+    @Column(name = "link_button_status", nullable = false, length = 16)
+    private String linkButtonStatus = "NOT_APPLICABLE";
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -48,6 +54,18 @@ public class InstagramCommentAutomationExecutionEntity {
         this.createdAt = Instant.now();
     }
 
+    public UUID getId() {
+        return id;
+    }
+
+    public InstagramCommentEntity getComment() {
+        return comment;
+    }
+
+    public InstagramCommentAutomationEntity getAutomation() {
+        return automation;
+    }
+
     public void markPublicReplySent() {
         publicReplyStatus = "SENT";
     }
@@ -56,11 +74,25 @@ public class InstagramCommentAutomationExecutionEntity {
         publicReplyStatus = outcomeUnknown ? "UNKNOWN" : "FAILED";
     }
 
-    public void markDirectMessageSent() {
+    public void markDirectMessageSent(String messageId, boolean hasLinkButton) {
         directMessageStatus = "SENT";
+        directMessageId = messageId;
+        linkButtonStatus = hasLinkButton ? "SENT" : "NOT_APPLICABLE";
     }
 
     public void markDirectMessageFailed(boolean outcomeUnknown) {
         directMessageStatus = outcomeUnknown ? "UNKNOWN" : "FAILED";
+    }
+
+    public void markLinkButtonProcessing() {
+        linkButtonStatus = "PROCESSING";
+    }
+
+    public void markLinkButtonSent() {
+        linkButtonStatus = "SENT";
+    }
+
+    public void markLinkButtonFailed(boolean outcomeUnknown) {
+        linkButtonStatus = outcomeUnknown ? "UNKNOWN" : "FAILED";
     }
 }

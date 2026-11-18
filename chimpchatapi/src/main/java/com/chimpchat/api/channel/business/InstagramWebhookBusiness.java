@@ -4,15 +4,18 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
+import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Locale;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+import com.chimpchat.api.automation.business.InstagramDirectMessageReceivedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import tools.jackson.databind.JsonNode;
@@ -24,20 +27,24 @@ public class InstagramWebhookBusiness {
     private static final String SIGNATURE_PREFIX = "sha256=";
     private static final String COMMENTS_FIELD = "comments";
     private static final String LIVE_COMMENTS_FIELD = "live_comments";
+    private static final String INSTAGRAM_OBJECT = "instagram";
     private static final String HMAC_ALGORITHM = "HmacSHA256";
 
     private final ObjectMapper objectMapper;
     private final InstagramCommentBusiness commentBusiness;
+    private final ApplicationEventPublisher eventPublisher;
     private final String appSecret;
     private final String verifyToken;
 
     public InstagramWebhookBusiness(
             ObjectMapper objectMapper,
             InstagramCommentBusiness commentBusiness,
+            ApplicationEventPublisher eventPublisher,
             @Value("${app.oauth.instagram.app-secret:}") String appSecret,
             @Value("${app.webhooks.instagram.verify-token:}") String verifyToken) {
         this.objectMapper = objectMapper;
         this.commentBusiness = commentBusiness;
+        this.eventPublisher = eventPublisher;
         this.appSecret = appSecret;
         this.verifyToken = verifyToken;
     }
@@ -74,7 +81,7 @@ public class InstagramWebhookBusiness {
 
     public void processCommentNotifications(byte[] payload) throws IOException {
         JsonNode root = objectMapper.readTree(payload);
-        if (!"instagram".equals(root.path("object").asText())) {
+        if (!INSTAGRAM_OBJECT.equals(root.path("object").asText())) {
             return;
         }
 
@@ -92,7 +99,37 @@ public class InstagramWebhookBusiness {
             } else if (entry.has("field")) {
                 processCommentChange(accountId, entry);
             }
+            JsonNode messaging = entry.path("messaging");
+            if (messaging.isArray()) {
+                for (JsonNode messageEvent : messaging) {
+                    processMessage(accountId, messageEvent);
+                }
+            }
         }
+    }
+
+    private void processMessage(String accountId, JsonNode messageEvent) {
+        JsonNode sender = messageEvent.path("sender");
+        JsonNode message = messageEvent.path("message");
+        String commenterId = textOrNull(sender.path("id"));
+        long timestamp = messageEvent.path("timestamp").asLong(0L);
+        if (accountId == null || commenterId == null
+                || accountId.equals(commenterId)
+                || !message.isObject()
+                || message.path("is_echo").asBoolean(false)
+                || message.path("is_deleted").asBoolean(false)) {
+            return;
+        }
+        if (timestamp <= 0) {
+            logger.warn("Received an Instagram message notification without a valid timestamp.");
+            return;
+        }
+
+        eventPublisher.publishEvent(new InstagramDirectMessageReceivedEvent(
+                accountId,
+                commenterId,
+                textOrNull(message.path("reply_to").path("mid")),
+                Instant.ofEpochMilli(timestamp)));
     }
 
     private void processCommentChange(String accountId, JsonNode change) {

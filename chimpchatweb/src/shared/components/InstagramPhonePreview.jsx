@@ -132,12 +132,19 @@ function MessageBubble({ children, own = false }) {
   );
 }
 
+function httpUrlOrNull(value) {
+  const url = value?.trim();
+  return /^https?:\/\//i.test(url || "") ? url : null;
+}
+
 function DirectMessageScreen({
   username,
   directMessage,
   directMessageLinkText,
   directMessageLinkUrl,
 }) {
+  const buttonUrl = httpUrlOrNull(directMessageLinkUrl);
+
   return (
     <>
       <div className="instagram-phone-chat-header">
@@ -154,17 +161,30 @@ function DirectMessageScreen({
         </MessageBubble>
         <MessageBubble own>
           {directMessage || "Your private message will appear here."}
-          {directMessageLinkUrl && (
-            <>
-              <br />
-              <br />
-              <strong>{directMessageLinkText}: </strong>
-              {directMessageLinkUrl}
-            </>
-          )}
         </MessageBubble>
+        {buttonUrl && (
+          <>
+            <MessageBubble>
+              Thanks! Please send me the link.
+            </MessageBubble>
+            <div className="instagram-phone-link-card">
+              <strong>{directMessageLinkText}</strong>
+              <a
+                className="instagram-phone-link-button"
+                href={buttonUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {directMessageLinkText}
+              </a>
+            </div>
+            <span className="instagram-phone-message-note">
+              Button follow-up after the commenter replies
+            </span>
+          </>
+        )}
         <span className="instagram-phone-message-note">
-          Preview of the automatic DM
+          Preview of the initial automatic DM
         </span>
       </div>
       <div className="instagram-phone-composer">
