@@ -132,7 +132,12 @@ function MessageBubble({ children, own = false }) {
   );
 }
 
-function DirectMessageScreen({ username, directMessage }) {
+function DirectMessageScreen({
+  username,
+  directMessage,
+  directMessageLinkText,
+  directMessageLinkUrl,
+}) {
   return (
     <>
       <div className="instagram-phone-chat-header">
@@ -148,7 +153,15 @@ function DirectMessageScreen({ username, directMessage }) {
           Hi! I commented on your post. Can you send me the details?
         </MessageBubble>
         <MessageBubble own>
-          {directMessage || "Your private message or link will appear here."}
+          {directMessage || "Your private message will appear here."}
+          {directMessageLinkUrl && (
+            <>
+              <br />
+              <br />
+              <strong>{directMessageLinkText}: </strong>
+              {directMessageLinkUrl}
+            </>
+          )}
         </MessageBubble>
         <span className="instagram-phone-message-note">
           Preview of the automatic DM
@@ -203,6 +216,8 @@ export function InstagramPhonePreview({
   media,
   publicReply,
   directMessage,
+  directMessageLinkText,
+  directMessageLinkUrl,
 }) {
   const [screen, setScreen] = useState("comment");
 
@@ -238,6 +253,8 @@ export function InstagramPhonePreview({
               media={media}
               publicReply={publicReply}
               directMessage={directMessage}
+              directMessageLinkText={directMessageLinkText}
+              directMessageLinkUrl={directMessageLinkUrl}
             />
           </div>
           <PhoneBottomBar />

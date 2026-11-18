@@ -74,7 +74,12 @@ class InstagramCommentAutomationMetaBusinessTests {
             InstagramCommentAutomationMetaBusiness business = createBusiness(server);
             InstagramCommentAutomationMetaBusiness.MetaReply reply =
                     business.sendPrivateReply(
-                            "instagram-account-id", "comment-id", "user-token", "Here: https://example.test/a&b");
+                            "instagram-account-id",
+                            "comment-id",
+                            "user-token",
+                            "Thanks for commenting!",
+                            "Shop now",
+                            "https://example.test/a&b");
 
             assertEquals("dm-id", reply.id());
             assertEquals("/v26.0/instagram-account-id/messages", requestPath.get());
@@ -83,7 +88,7 @@ class InstagramCommentAutomationMetaBusinessTests {
             var payload = new ObjectMapper().readTree(requestBody.get());
             assertEquals("comment-id", payload.path("recipient").path("comment_id").asText());
             assertEquals(
-                    "Here: https://example.test/a&b",
+                    "Thanks for commenting!\n\nShop now: https://example.test/a&b",
                     payload.path("message").path("text").asText());
         } finally {
             server.stop(0);

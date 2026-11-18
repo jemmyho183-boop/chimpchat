@@ -9,6 +9,8 @@ const EMPTY_FORM = {
   keyword: "",
   publicReply: "",
   directMessage: "",
+  directMessageLinkText: "",
+  directMessageLinkUrl: "",
 };
 
 function mediaLabel(media) {
@@ -168,7 +170,7 @@ function InstagramAutomationForm({
         />
       </label>
       <label>
-        Private DM message or link
+        Private DM message
         <textarea
           value={form.directMessage}
           onChange={(event) =>
@@ -178,9 +180,39 @@ function InstagramAutomationForm({
           rows={3}
           required
           disabled={saving}
-          placeholder="Here is the link you asked for: https://…"
+          placeholder="Thanks for commenting! Here is the link you asked for."
         />
       </label>
+      <label>
+        Link text (optional)
+        <input
+          type="text"
+          value={form.directMessageLinkText}
+          onChange={(event) =>
+            onFormChange({ ...form, directMessageLinkText: event.target.value })
+          }
+          maxLength={100}
+          disabled={saving}
+          placeholder="Shop the collection"
+        />
+      </label>
+      <label>
+        Link URL (optional)
+        <input
+          type="url"
+          value={form.directMessageLinkUrl}
+          onChange={(event) =>
+            onFormChange({ ...form, directMessageLinkUrl: event.target.value })
+          }
+          maxLength={900}
+          disabled={saving}
+          placeholder="https://example.com/collection"
+        />
+      </label>
+      <p className="instagram-automation-help">
+        Instagram sends the link as clickable URL text in the private reply, not as a button.
+        Fill in both link fields or leave both empty.
+      </p>
 
       {error && (
         <p className="inline-notice notice-error" role="alert">
@@ -205,6 +237,8 @@ function InstagramAutomationForm({
             !selectedMediaId ||
             !form.publicReply.trim() ||
             !form.directMessage.trim() ||
+            Boolean(form.directMessageLinkText.trim()) !==
+              Boolean(form.directMessageLinkUrl.trim()) ||
             (form.matchType === "KEYWORD" && !form.keyword.trim())
           }
         >
@@ -292,6 +326,8 @@ export function InstagramCommentAutomationBuilder({ account }) {
       keyword: form.matchType === "KEYWORD" ? form.keyword.trim() : null,
       publicReply: form.publicReply.trim(),
       directMessage: form.directMessage.trim(),
+      directMessageLinkText: form.directMessageLinkText.trim() || null,
+      directMessageLinkUrl: form.directMessageLinkUrl.trim() || null,
       enabled: editing?.enabled ?? true,
     };
 
@@ -321,6 +357,8 @@ export function InstagramCommentAutomationBuilder({ account }) {
       keyword: automation.keyword || "",
       publicReply: automation.publicReply,
       directMessage: automation.directMessage,
+      directMessageLinkText: automation.directMessageLinkText || "",
+      directMessageLinkUrl: automation.directMessageLinkUrl || "",
     });
     setError("");
   }
@@ -336,6 +374,8 @@ export function InstagramCommentAutomationBuilder({ account }) {
         keyword: automation.keyword,
         publicReply: automation.publicReply,
         directMessage: automation.directMessage,
+        directMessageLinkText: automation.directMessageLinkText,
+        directMessageLinkUrl: automation.directMessageLinkUrl,
         enabled: !automation.enabled,
       });
       notify(automation.enabled ? "Flow paused." : "Flow activated.");
@@ -401,6 +441,8 @@ export function InstagramCommentAutomationBuilder({ account }) {
           }
           publicReply={form.publicReply}
           directMessage={form.directMessage}
+          directMessageLinkText={form.directMessageLinkText}
+          directMessageLinkUrl={form.directMessageLinkUrl}
         />
       </div>
 
@@ -444,6 +486,12 @@ export function InstagramCommentAutomationBuilder({ account }) {
                   <strong>Private DM</strong>
                   <span>{automation.directMessage}</span>
                 </p>
+                {automation.directMessageLinkUrl && (
+                  <p>
+                    <strong>{automation.directMessageLinkText}</strong>
+                    <span>{automation.directMessageLinkUrl}</span>
+                  </p>
+                )}
               </div>
               <div className="instagram-automation-card-actions">
                 <button

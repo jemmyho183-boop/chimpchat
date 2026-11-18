@@ -235,10 +235,21 @@ class ChimpchatapiApplicationTests {
 					"matchType":"KEYWORD",
 					"keyword":"BUY",
 					"publicReply":"Thanks for asking!",
-					"directMessage":"Here is the link: https://example.test",
+					"directMessage":"Thanks for asking!",
+					"directMessageLinkText":"Shop now",
+					"directMessageLinkUrl":"https://example.test",
 					"enabled":true
 				}
 				""".formatted(owner.accountId());
+
+		mockMvc.perform(post(INSTAGRAM_AUTOMATIONS)
+						.with(asUser(owner.user()))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(automationRequest.replace(
+								"\"directMessageLinkUrl\":\"https://example.test\",", "")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("invalid_dm_link"));
 
 		mockMvc.perform(post(INSTAGRAM_AUTOMATIONS)
 						.with(asUser(owner.user()))
@@ -248,6 +259,8 @@ class ChimpchatapiApplicationTests {
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.mediaId").value("selected-media-id"))
 				.andExpect(jsonPath("$.matchType").value("KEYWORD"))
+				.andExpect(jsonPath("$.directMessageLinkText").value("Shop now"))
+				.andExpect(jsonPath("$.directMessageLinkUrl").value("https://example.test"))
 				.andExpect(jsonPath("$.enabled").value(true));
 
 		mockMvc.perform(get(INSTAGRAM_AUTOMATIONS).with(asUser(otherOwner.user())))

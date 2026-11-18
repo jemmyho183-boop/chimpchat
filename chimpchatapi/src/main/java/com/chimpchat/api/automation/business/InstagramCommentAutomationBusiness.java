@@ -111,7 +111,9 @@ public class InstagramCommentAutomationBusiness {
                         request.matchType(),
                         normalizedKeyword(request),
                         request.publicReply().trim(),
-                        request.directMessage().trim()));
+                        request.directMessage().trim(),
+                        normalizedLinkText(request),
+                        normalizedLinkUrl(request)));
         return toResponse(automation);
     }
 
@@ -139,6 +141,8 @@ public class InstagramCommentAutomationBusiness {
                 normalizedKeyword(request),
                 request.publicReply().trim(),
                 request.directMessage().trim(),
+                normalizedLinkText(request),
+                normalizedLinkUrl(request),
                 request.enabled());
         return toResponse(automationRepository.save(automation));
     }
@@ -196,7 +200,11 @@ public class InstagramCommentAutomationBusiness {
             try {
                 metaBusiness.sendPrivateReply(
                         comment.getInstagramAccountId(),
-                        comment.getExternalCommentId(), accessToken, automation.getDirectMessage());
+                        comment.getExternalCommentId(),
+                        accessToken,
+                        automation.getDirectMessage(),
+                        automation.getDirectMessageLinkText(),
+                        automation.getDirectMessageLinkUrl());
                 execution.markDirectMessageSent();
             } catch (InstagramCommentAutomationMetaBusiness.MetaRequestException exception) {
                 execution.markDirectMessageFailed(exception.isOutcomeUnknown());
@@ -234,6 +242,53 @@ public class InstagramCommentAutomationBusiness {
                     HttpStatus.BAD_REQUEST, "keyword_required",
                     "Add a keyword or choose the any-comment trigger.");
         }
+        boolean hasLinkText = request.directMessageLinkText() != null
+                && !request.directMessageLinkText().isBlank();
+        boolean hasLinkUrl = request.directMessageLinkUrl() != null
+                && !request.directMessageLinkUrl().isBlank();
+        if (hasLinkText != hasLinkUrl) {
+            throw invalidDmLink("Provide both the DM link text and URL, or leave both empty.");
+        }
+        if (hasLinkUrl) {
+            validateDmLinkUrl(request.directMessageLinkUrl().trim());
+            String completeMessage = request.directMessage().trim() + "\n\n"
+                    + request.directMessageLinkText().trim() + ": "
+                    + request.directMessageLinkUrl().trim();
+            if (completeMessage.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 1000) {
+                throw invalidDmLink("The DM text and link must fit within Instagram's 1,000-byte message limit.");
+            }
+        }
+    }
+
+    private void validateDmLinkUrl(String value) {
+        java.net.URI uri;
+        try {
+            uri = java.net.URI.create(value);
+        } catch (IllegalArgumentException exception) {
+            throw invalidDmLink("Use a valid HTTP or HTTPS URL for the DM link.");
+        }
+        String scheme = uri.getScheme();
+        if (uri.getHost() == null || uri.getRawUserInfo() != null
+                || !("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme))) {
+            throw invalidDmLink("Use a valid HTTP or HTTPS URL for the DM link.");
+        }
+    }
+
+    private InstagramCommentAutomationException invalidDmLink(String message) {
+        return new InstagramCommentAutomationException(
+                HttpStatus.BAD_REQUEST, "invalid_dm_link", message);
+    }
+
+    private String normalizedLinkText(InstagramCommentAutomationRequestDto request) {
+        return request.directMessageLinkText() == null || request.directMessageLinkText().isBlank()
+                ? null
+                : request.directMessageLinkText().trim();
+    }
+
+    private String normalizedLinkUrl(InstagramCommentAutomationRequestDto request) {
+        return request.directMessageLinkUrl() == null || request.directMessageLinkUrl().isBlank()
+                ? null
+                : request.directMessageLinkUrl().trim();
     }
 
     private String normalizedKeyword(InstagramCommentAutomationRequestDto request) {
@@ -261,6 +316,8 @@ public class InstagramCommentAutomationBusiness {
                 automation.getKeyword(),
                 automation.getPublicReply(),
                 automation.getDirectMessage(),
+                automation.getDirectMessageLinkText(),
+                automation.getDirectMessageLinkUrl(),
                 automation.isEnabled(),
                 automation.getCreatedAt());
     }

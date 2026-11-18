@@ -50,7 +50,12 @@ public class InstagramCommentAutomationMetaBusiness {
     }
 
     public MetaReply sendPrivateReply(
-            String instagramAccountId, String commentId, String accessToken, String message) {
+            String instagramAccountId,
+            String commentId,
+            String accessToken,
+            String message,
+            String linkText,
+            String linkUrl) {
         URI uri = UriComponentsBuilder.fromUriString(graphUri)
                 .pathSegment(instagramAccountId, "messages")
                 .build()
@@ -58,7 +63,11 @@ public class InstagramCommentAutomationMetaBusiness {
                 .toUri();
         var payload = objectMapper.createObjectNode();
         payload.putObject("recipient").put("comment_id", commentId);
-        payload.putObject("message").put("text", message);
+        String messageText = message;
+        if (linkUrl != null && !linkUrl.isBlank()) {
+            messageText += "\n\n" + linkText + ": " + linkUrl;
+        }
+        payload.putObject("message").put("text", messageText);
         HttpRequest request = HttpRequest.newBuilder(uri)
                 .timeout(REQUEST_TIMEOUT)
                 .header("Content-Type", "application/json")

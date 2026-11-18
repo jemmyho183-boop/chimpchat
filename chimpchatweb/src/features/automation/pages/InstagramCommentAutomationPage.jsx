@@ -47,9 +47,6 @@ export function InstagramCommentAutomationPage({ bootstrap }) {
             <p className="eyebrow">{bootstrap.workspace.name}</p>
             <h1>Auto-DM links from comments</h1>
           </div>
-          <span className="instagram-account-badge">
-            Connected as @{account.username}
-          </span>
         </div>
         <div className="dashboard-page-content instagram-automation-page-content">
           {error && (

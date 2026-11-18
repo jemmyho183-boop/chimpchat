@@ -12,5 +12,7 @@ public record InstagramCommentAutomationResponseDto(
         String keyword,
         String publicReply,
         String directMessage,
+        String directMessageLinkText,
+        String directMessageLinkUrl,
         boolean enabled,
         Instant createdAt) {}

@@ -49,6 +49,12 @@ public class InstagramCommentAutomationEntity {
     @Column(name = "direct_message", nullable = false, columnDefinition = "text")
     private String directMessage;
 
+    @Column(name = "direct_message_link_text", length = 100)
+    private String directMessageLinkText;
+
+    @Column(name = "direct_message_link_url", length = 900)
+    private String directMessageLinkUrl;
+
     @Column(nullable = false)
     private boolean enabled;
 
@@ -68,12 +74,16 @@ public class InstagramCommentAutomationEntity {
             String matchType,
             String keyword,
             String publicReply,
-            String directMessage) {
+            String directMessage,
+            String directMessageLinkText,
+            String directMessageLinkUrl) {
         this.id = UUID.randomUUID();
         this.connection = connection;
         this.instagramAccountId = instagramAccountId;
         this.externalMediaId = externalMediaId;
-        update(mediaLabel, matchType, keyword, publicReply, directMessage, true);
+        update(
+                mediaLabel, matchType, keyword, publicReply,
+                directMessage, directMessageLinkText, directMessageLinkUrl, true);
         this.createdAt = Instant.now();
     }
 
@@ -83,12 +93,16 @@ public class InstagramCommentAutomationEntity {
             String keyword,
             String publicReply,
             String directMessage,
+            String directMessageLinkText,
+            String directMessageLinkUrl,
             boolean enabled) {
         this.mediaLabel = mediaLabel;
         this.matchType = matchType;
         this.keyword = keyword;
         this.publicReply = publicReply;
         this.directMessage = directMessage;
+        this.directMessageLinkText = directMessageLinkText;
+        this.directMessageLinkUrl = directMessageLinkUrl;
         this.enabled = enabled;
         this.updatedAt = Instant.now();
     }
@@ -127,6 +141,14 @@ public class InstagramCommentAutomationEntity {
 
     public String getDirectMessage() {
         return directMessage;
+    }
+
+    public String getDirectMessageLinkText() {
+        return directMessageLinkText;
+    }
+
+    public String getDirectMessageLinkUrl() {
+        return directMessageLinkUrl;
     }
 
     public boolean isEnabled() {
