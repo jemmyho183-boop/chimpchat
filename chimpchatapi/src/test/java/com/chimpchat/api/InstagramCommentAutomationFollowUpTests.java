@@ -1,6 +1,7 @@
 package com.chimpchat.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -69,11 +70,90 @@ class InstagramCommentAutomationFollowUpTests {
         postWebhook(commentPayload(account.accountId(), account.mediaId(), "comment-id"))
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk());
         awaitLinkButtonStatus("SENT", account.connectionId());
+        String definitionSnapshot = jdbcTemplate.queryForObject(
+                """
+                SELECT execution.definition_snapshot
+                FROM instagram_comment_automation_executions execution
+                JOIN instagram_comments comment ON comment.id = execution.comment_id
+                WHERE comment.connection_id = ? AND comment.external_comment_id = 'comment-id'
+                """,
+                String.class,
+                account.connectionId());
+        assertTrue(definitionSnapshot.contains("INSTAGRAM_COMMENT_RECEIVED"));
+        assertTrue(definitionSnapshot.contains("INSTAGRAM_PUBLIC_COMMENT_REPLY"));
+        assertEquals(2, jdbcTemplate.queryForObject(
+                """
+                SELECT COUNT(*)
+                FROM automation_step_executions step_execution
+                JOIN instagram_comment_automation_executions execution ON execution.id = step_execution.execution_id
+                JOIN instagram_comments comment ON comment.id = execution.comment_id
+                WHERE comment.connection_id = ? AND comment.external_comment_id = 'comment-id'
+                    AND step_execution.status = 'SENT'
+                """,
+                Integer.class,
+                account.connectionId()));
         verify(metaBusiness, times(1)).sendPrivateReply(
                 account.accountId(), "comment-id", "access-token", "Thanks for asking!", "Shop now",
                 "https://example.test/shop");
         verify(metaBusiness, times(0)).sendLinkButtonFollowUp(
                 anyString(), anyString(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void recordsStepOutcomesIndependentlyAndContinuesAfterAReplyFailure() throws Exception {
+        TestAccount account = createAccount();
+        when(tokenEncryptionBusiness.decrypt("encrypted-token")).thenReturn("access-token");
+        when(metaBusiness.replyToComment(anyString(), anyString(), anyString()))
+                .thenThrow(new InstagramCommentAutomationMetaBusiness.MetaRequestException(
+                        "Public reply failed.", false));
+        when(metaBusiness.sendPrivateReply(
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new InstagramCommentAutomationMetaBusiness.MetaReply("private-reply-id"));
+
+        postWebhook(commentPayload(account.accountId(), account.mediaId(), "comment-id"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk());
+        awaitStepStatus("SENT", "opening-dm", account.connectionId());
+
+        assertEquals("FAILED", jdbcTemplate.queryForObject(
+                """
+                SELECT step_execution.status
+                FROM automation_step_executions step_execution
+                JOIN instagram_comment_automation_executions execution ON execution.id = step_execution.execution_id
+                JOIN instagram_comments comment ON comment.id = execution.comment_id
+                WHERE comment.connection_id = ? AND comment.external_comment_id = 'comment-id'
+                    AND step_execution.step_id = 'public-reply'
+                """,
+                String.class,
+                account.connectionId()));
+        verify(metaBusiness, times(1)).sendPrivateReply(
+                account.accountId(), "comment-id", "access-token", "Thanks for asking!", "Shop now",
+                "https://example.test/shop");
+    }
+
+    private void awaitStepStatus(String expected, String stepId, UUID connectionId) throws InterruptedException {
+        long deadline = System.currentTimeMillis() + 3000;
+        String status = null;
+        while (System.currentTimeMillis() < deadline) {
+            status = jdbcTemplate.query(
+                    """
+                    SELECT step_execution.status
+                    FROM automation_step_executions step_execution
+                    JOIN instagram_comment_automation_executions execution ON execution.id = step_execution.execution_id
+                    JOIN instagram_comments comment ON comment.id = execution.comment_id
+                    WHERE comment.connection_id = ? AND comment.external_comment_id = 'comment-id'
+                        AND step_execution.step_id = ?
+                    """,
+                    resultSet -> resultSet.next() ? resultSet.getString(1) : null,
+                    connectionId,
+                    stepId);
+            if (expected.equals(status)) {
+                return;
+            }
+            Thread.sleep(20);
+        }
+        assertEquals(expected, status);
     }
 
     private void awaitLinkButtonStatus(String expected, UUID connectionId) throws InterruptedException {

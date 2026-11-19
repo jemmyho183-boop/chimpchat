@@ -2303,6 +2303,7 @@ select:focus-visible {
 }
 
 .instagram-automation-form > label,
+.instagram-automation-step-group > label,
 .instagram-automation-keyword {
   display: grid;
   gap: var(--space-1);
@@ -2334,6 +2335,29 @@ select:focus-visible {
   padding: var(--space-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
+}
+
+.instagram-automation-step-group {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.instagram-automation-step-group legend {
+  padding: 0 var(--space-1);
+  color: var(--color-ink-soft);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.instagram-automation-step-group h3 {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: var(--text-base);
+  font-weight: 600;
 }
 
 .instagram-automation-trigger legend {

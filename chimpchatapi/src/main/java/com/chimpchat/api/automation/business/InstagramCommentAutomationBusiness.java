@@ -3,15 +3,18 @@ package com.chimpchat.api.automation.business;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 import com.chimpchat.api.automation.dto.InstagramCommentAutomationRequestDto;
 import com.chimpchat.api.automation.dto.InstagramCommentAutomationResponseDto;
 import com.chimpchat.api.automation.dto.InstagramMediaResponseDto;
+import com.chimpchat.api.automation.entity.AutomationStepExecutionEntity;
 import com.chimpchat.api.automation.entity.InstagramCommentAutomationEntity;
 import com.chimpchat.api.automation.entity.InstagramCommentAutomationExecutionEntity;
+import com.chimpchat.api.automation.repository.AutomationStepExecutionRepository;
 import com.chimpchat.api.automation.repository.InstagramCommentAutomationExecutionRepository;
 import com.chimpchat.api.automation.repository.InstagramCommentAutomationRepository;
 import com.chimpchat.api.channel.business.TokenEncryptionBusiness;
@@ -35,8 +38,12 @@ public class InstagramCommentAutomationBusiness {
     private static final Logger logger = LoggerFactory.getLogger(InstagramCommentAutomationBusiness.class);
     private static final String PROVIDER = "INSTAGRAM";
 
+    private final AutomationDefinitionMapper definitionMapper;
+    private final AutomationTriggerHandlerRegistry triggerHandlerRegistry;
+    private final AutomationStepHandlerRegistry stepHandlerRegistry;
     private final InstagramCommentAutomationRepository automationRepository;
     private final InstagramCommentAutomationExecutionRepository executionRepository;
+    private final AutomationStepExecutionRepository stepExecutionRepository;
     private final InstagramCommentRepository commentRepository;
     private final ChannelConnectionRepository connectionRepository;
     private final WorkspaceBusiness workspaceBusiness;
@@ -45,16 +52,24 @@ public class InstagramCommentAutomationBusiness {
     private final TransactionTemplate transactionTemplate;
 
     public InstagramCommentAutomationBusiness(
+            AutomationDefinitionMapper definitionMapper,
+            AutomationTriggerHandlerRegistry triggerHandlerRegistry,
+            AutomationStepHandlerRegistry stepHandlerRegistry,
             InstagramCommentAutomationRepository automationRepository,
             InstagramCommentAutomationExecutionRepository executionRepository,
+            AutomationStepExecutionRepository stepExecutionRepository,
             InstagramCommentRepository commentRepository,
             ChannelConnectionRepository connectionRepository,
             WorkspaceBusiness workspaceBusiness,
             TokenEncryptionBusiness tokenEncryptionBusiness,
             InstagramCommentAutomationMetaBusiness metaBusiness,
             TransactionTemplate transactionTemplate) {
+        this.definitionMapper = definitionMapper;
+        this.triggerHandlerRegistry = triggerHandlerRegistry;
+        this.stepHandlerRegistry = stepHandlerRegistry;
         this.automationRepository = automationRepository;
         this.executionRepository = executionRepository;
+        this.stepExecutionRepository = stepExecutionRepository;
         this.commentRepository = commentRepository;
         this.connectionRepository = connectionRepository;
         this.workspaceBusiness = workspaceBusiness;
@@ -110,18 +125,20 @@ public class InstagramCommentAutomationBusiness {
                     HttpStatus.CONFLICT, "automation_already_exists",
                     "A flow already exists for this Instagram post and account.");
         }
-        InstagramCommentAutomationEntity automation = automationRepository.save(
-                new InstagramCommentAutomationEntity(
-                        connection,
-                        request.accountId(),
-                        request.mediaId(),
-                        request.mediaLabel().trim(),
-                        request.matchType(),
-                        normalizedKeyword(request),
-                        request.publicReply().trim(),
-                        request.directMessage().trim(),
-                        normalizedLinkText(request),
-                        normalizedLinkUrl(request)));
+        String definitionJson = definitionMapper.toJson(definitionMapper.fromRequest(request));
+        InstagramCommentAutomationEntity automation = new InstagramCommentAutomationEntity(
+                connection,
+                request.accountId(),
+                request.mediaId(),
+                request.mediaLabel().trim(),
+                request.matchType(),
+                normalizedKeyword(request),
+                request.publicReply().trim(),
+                request.directMessage().trim(),
+                normalizedLinkText(request),
+                normalizedLinkUrl(request));
+        automation.initializeDefinition(definitionJson);
+        automationRepository.save(automation);
         return toResponse(automation);
     }
 
@@ -152,6 +169,7 @@ public class InstagramCommentAutomationBusiness {
                 normalizedLinkText(request),
                 normalizedLinkUrl(request),
                 request.enabled());
+        automation.updateDefinition(definitionMapper.toJson(definitionMapper.fromRequest(request)));
         return toResponse(automationRepository.save(automation));
     }
 
@@ -172,18 +190,28 @@ public class InstagramCommentAutomationBusiness {
         if (comment.isDeleted() || comment.getExternalMediaId() == null) {
             return;
         }
+        AutomationEvent event = commentEvent(comment);
         List<InstagramCommentAutomationEntity> automations = automationRepository.findEnabledForMedia(
                 comment.getConnection().getId(),
                 comment.getInstagramAccountId(),
                 comment.getExternalMediaId());
         for (InstagramCommentAutomationEntity automation : automations) {
-            if (!matches(automation, comment.getCommentText())
+            AutomationDefinition definition = currentDefinition(automation);
+            AutomationTriggerHandler triggerHandler =
+                    triggerHandlerRegistry.require(definition.trigger().type());
+            triggerHandler.validate(definition.trigger());
+            if (!triggerHandler.matches(definition.trigger(), event)
                     || executionRepository.existsByCommentIdAndAutomationId(comment.getId(), automation.getId())) {
                 continue;
             }
 
+            definition.steps().forEach(stepHandlerRegistry::validate);
+            List<AutomationStepHandler> handlers = definition.steps().stream()
+                    .map(step -> stepHandlerRegistry.require(step.type()))
+                    .toList();
             InstagramCommentAutomationExecutionEntity execution = executionRepository.saveAndFlush(
-                    new InstagramCommentAutomationExecutionEntity(comment, automation));
+                    new InstagramCommentAutomationExecutionEntity(
+                            comment, automation, definitionMapper.toJson(definition)));
             String accessToken;
             try {
                 accessToken = tokenEncryptionBusiness.decrypt(
@@ -192,36 +220,26 @@ public class InstagramCommentAutomationBusiness {
                 execution.markPublicReplyFailed(false);
                 execution.markDirectMessageFailed(false);
                 logger.warn("Instagram automation {} could not load its account credentials.", automation.getId());
+                persistFailedSteps(execution, definition, exception.getMessage(), false);
                 continue;
             }
 
-            try {
-                metaBusiness.replyToComment(
-                        comment.getExternalCommentId(), accessToken, automation.getPublicReply());
-                execution.markPublicReplySent();
-            } catch (InstagramCommentAutomationMetaBusiness.MetaRequestException exception) {
-                execution.markPublicReplyFailed(exception.isOutcomeUnknown());
-                logger.warn("Instagram public reply failed for automation {}: {}",
-                        automation.getId(), exception.getMessage());
-            }
-
-            try {
-                boolean hasLinkButton = automation.getDirectMessageLinkUrl() != null
-                        && !automation.getDirectMessageLinkUrl().isBlank();
-                InstagramCommentAutomationMetaBusiness.MetaReply reply = metaBusiness.sendPrivateReply(
-                        comment.getInstagramAccountId(),
-                        comment.getExternalCommentId(),
-                        accessToken,
-                        automation.getDirectMessage(),
-                        hasLinkButton ? automation.getDirectMessageLinkText() : null,
-                        hasLinkButton ? automation.getDirectMessageLinkUrl() : null);
-                execution.markDirectMessageSent(
-                        reply.id(),
-                        hasLinkButton);
-            } catch (InstagramCommentAutomationMetaBusiness.MetaRequestException exception) {
-                execution.markDirectMessageFailed(exception.isOutcomeUnknown());
-                logger.warn("Instagram DM failed for automation {}: {}",
-                        automation.getId(), exception.getMessage());
+            for (int index = 0; index < definition.steps().size(); index++) {
+                AutomationDefinition.StepDefinition step = definition.steps().get(index);
+                AutomationStepHandler handler = handlers.get(index);
+                AutomationStepExecutionEntity stepExecution = stepExecutionRepository.saveAndFlush(
+                        new AutomationStepExecutionEntity(execution, step.id(), step.type()));
+                try {
+                    String providerResultId = handler.execute(step, automation, comment, accessToken);
+                    stepExecution.markSent(providerResultId);
+                    markLegacyStepSent(execution, step, providerResultId);
+                } catch (InstagramCommentAutomationMetaBusiness.MetaRequestException exception) {
+                    stepExecution.markFailed(exception.isOutcomeUnknown(), exception.getMessage());
+                    markLegacyStepFailed(execution, step, exception.isOutcomeUnknown());
+                    logger.warn("Instagram automation {} step {} failed: {}",
+                            automation.getId(), step.id(), exception.getMessage());
+                }
+                stepExecutionRepository.save(stepExecution);
             }
         }
     }
@@ -254,13 +272,21 @@ public class InstagramCommentAutomationBusiness {
             execution.markLinkButtonProcessing();
             executionRepository.saveAndFlush(execution);
             InstagramCommentAutomationEntity automation = execution.getAutomation();
+            AutomationDefinition definition = execution.getDefinitionSnapshot() == null
+                    ? definitionMapper.fromLegacy(automation)
+                    : definitionMapper.fromJson(execution.getDefinitionSnapshot());
+            AutomationDefinition.StepDefinition privateReply = definition.steps().stream()
+                    .filter(step -> AutomationDefinition.INSTAGRAM_PRIVATE_REPLY.equals(step.type()))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException(
+                            "The automation execution has no private-reply step."));
             return new FollowUpCandidate(
                     execution.getId(),
                     automation.getInstagramAccountId(),
                     execution.getComment().getCommenterId(),
                     automation.getConnection().getEncryptedAccessToken(),
-                    automation.getDirectMessageLinkText(),
-                    automation.getDirectMessageLinkUrl());
+                    privateReply.config().get("buttonText"),
+                    privateReply.config().get("buttonUrl"));
         });
         if (candidate == null) {
             return;
@@ -387,13 +413,56 @@ public class InstagramCommentAutomationBusiness {
                 : null;
     }
 
-    private boolean matches(InstagramCommentAutomationEntity automation, String commentText) {
-        if (InstagramCommentAutomationEntity.ANY_COMMENT.equals(automation.getMatchType())) {
-            return true;
+    private AutomationDefinition currentDefinition(InstagramCommentAutomationEntity automation) {
+        return automation.getDefinitionJson() == null
+                ? definitionMapper.fromLegacy(automation)
+                : definitionMapper.fromJson(automation.getDefinitionJson());
+    }
+
+    private AutomationEvent commentEvent(InstagramCommentEntity comment) {
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("mediaId", comment.getExternalMediaId());
+        if (comment.getCommentText() != null) {
+            attributes.put("commentText", comment.getCommentText());
         }
-        return commentText != null
-                && commentText.toLowerCase(Locale.ROOT)
-                        .contains(automation.getKeyword().toLowerCase(Locale.ROOT));
+        return new AutomationEvent(AutomationDefinition.INSTAGRAM_COMMENT_RECEIVED, attributes);
+    }
+
+    private void persistFailedSteps(
+            InstagramCommentAutomationExecutionEntity execution,
+            AutomationDefinition definition,
+            String message,
+            boolean outcomeUnknown) {
+        for (AutomationDefinition.StepDefinition step : definition.steps()) {
+            AutomationStepExecutionEntity stepExecution = new AutomationStepExecutionEntity(
+                    execution, step.id(), step.type());
+            stepExecution.markFailed(outcomeUnknown, message);
+            stepExecutionRepository.save(stepExecution);
+        }
+    }
+
+    private void markLegacyStepSent(
+            InstagramCommentAutomationExecutionEntity execution,
+            AutomationDefinition.StepDefinition step,
+            String providerResultId) {
+        if (AutomationDefinition.INSTAGRAM_PUBLIC_COMMENT_REPLY.equals(step.type())) {
+            execution.markPublicReplySent();
+        } else if (AutomationDefinition.INSTAGRAM_PRIVATE_REPLY.equals(step.type())) {
+            execution.markDirectMessageSent(
+                    providerResultId,
+                    step.config().containsKey("buttonUrl"));
+        }
+    }
+
+    private void markLegacyStepFailed(
+            InstagramCommentAutomationExecutionEntity execution,
+            AutomationDefinition.StepDefinition step,
+            boolean outcomeUnknown) {
+        if (AutomationDefinition.INSTAGRAM_PUBLIC_COMMENT_REPLY.equals(step.type())) {
+            execution.markPublicReplyFailed(outcomeUnknown);
+        } else if (AutomationDefinition.INSTAGRAM_PRIVATE_REPLY.equals(step.type())) {
+            execution.markDirectMessageFailed(outcomeUnknown);
+        }
     }
 
     private InstagramCommentAutomationResponseDto toResponse(InstagramCommentAutomationEntity automation) {

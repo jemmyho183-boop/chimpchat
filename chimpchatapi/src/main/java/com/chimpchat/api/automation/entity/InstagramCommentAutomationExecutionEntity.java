@@ -38,6 +38,12 @@ public class InstagramCommentAutomationExecutionEntity {
     @Column(name = "direct_message_id", length = 255)
     private String directMessageId;
 
+    @Column(name = "automation_version", nullable = false)
+    private int automationVersion;
+
+    @Column(name = "definition_snapshot", columnDefinition = "text")
+    private String definitionSnapshot;
+
     @Column(name = "link_button_status", nullable = false, length = 16)
     private String linkButtonStatus = "NOT_APPLICABLE";
 
@@ -47,10 +53,14 @@ public class InstagramCommentAutomationExecutionEntity {
     protected InstagramCommentAutomationExecutionEntity() {}
 
     public InstagramCommentAutomationExecutionEntity(
-            InstagramCommentEntity comment, InstagramCommentAutomationEntity automation) {
+            InstagramCommentEntity comment,
+            InstagramCommentAutomationEntity automation,
+            String definitionSnapshot) {
         this.id = UUID.randomUUID();
         this.comment = comment;
         this.automation = automation;
+        this.automationVersion = automation.getDefinitionVersion();
+        this.definitionSnapshot = definitionSnapshot;
         this.createdAt = Instant.now();
     }
 
@@ -64,6 +74,14 @@ public class InstagramCommentAutomationExecutionEntity {
 
     public InstagramCommentAutomationEntity getAutomation() {
         return automation;
+    }
+
+    public int getAutomationVersion() {
+        return automationVersion;
+    }
+
+    public String getDefinitionSnapshot() {
+        return definitionSnapshot;
     }
 
     public void markPublicReplySent() {

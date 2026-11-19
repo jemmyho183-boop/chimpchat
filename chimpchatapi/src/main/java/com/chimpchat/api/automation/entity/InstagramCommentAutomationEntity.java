@@ -55,6 +55,12 @@ public class InstagramCommentAutomationEntity {
     @Column(name = "direct_message_link_url", length = 900)
     private String directMessageLinkUrl;
 
+    @Column(name = "definition_version", nullable = false)
+    private int definitionVersion = 1;
+
+    @Column(name = "definition_json", columnDefinition = "text")
+    private String definitionJson;
+
     @Column(nullable = false)
     private boolean enabled;
 
@@ -107,6 +113,17 @@ public class InstagramCommentAutomationEntity {
         this.updatedAt = Instant.now();
     }
 
+    public void initializeDefinition(String definitionJson) {
+        this.definitionJson = definitionJson;
+    }
+
+    public void updateDefinition(String definitionJson) {
+        if (this.definitionJson != null && !this.definitionJson.equals(definitionJson)) {
+            definitionVersion++;
+        }
+        this.definitionJson = definitionJson;
+    }
+
     public UUID getId() {
         return id;
     }
@@ -149,6 +166,14 @@ public class InstagramCommentAutomationEntity {
 
     public String getDirectMessageLinkUrl() {
         return directMessageLinkUrl;
+    }
+
+    public int getDefinitionVersion() {
+        return definitionVersion;
+    }
+
+    public String getDefinitionJson() {
+        return definitionJson;
     }
 
     public boolean isEnabled() {

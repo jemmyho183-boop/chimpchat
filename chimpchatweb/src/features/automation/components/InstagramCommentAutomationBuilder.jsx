@@ -156,66 +156,78 @@ function InstagramAutomationForm({
         )}
       </fieldset>
 
-      <label>
-        Public comment reply
-        <textarea
-          value={form.publicReply}
-          onChange={(event) =>
-            onFormChange({ ...form, publicReply: event.target.value })
-          }
-          maxLength={2200}
-          rows={3}
-          required
-          disabled={saving}
-          placeholder="Thanks for your comment!"
-        />
-      </label>
-      <label>
-        Private DM message
-        <textarea
-          value={form.directMessage}
-          onChange={(event) =>
-            onFormChange({ ...form, directMessage: event.target.value })
-          }
-          maxLength={1000}
-          rows={3}
-          required
-          disabled={saving}
-          placeholder="Thanks for commenting! Reply and I’ll send the link."
-        />
-      </label>
-      <label>
-        Link button label (optional)
-        <input
-          type="text"
-          value={form.directMessageLinkText}
-          onChange={(event) =>
-            onFormChange({ ...form, directMessageLinkText: event.target.value })
-          }
-          maxLength={20}
-          disabled={saving}
-          placeholder="Shop now"
-        />
-      </label>
-      <label>
-        Button destination URL (optional)
-        <input
-          type="url"
-          value={form.directMessageLinkUrl}
-          onChange={(event) =>
-            onFormChange({ ...form, directMessageLinkUrl: event.target.value })
-          }
-          maxLength={900}
-          disabled={saving}
-          placeholder="https://example.com/collection"
-        />
-      </label>
-      <p className="instagram-automation-help">
-        Instagram sends your text first. After the commenter replies, it sends
-        one follow-up with this button within 24 hours. Button labels can be up
-        to 20 characters. Button cards aren’t available in Instagram web. Fill
-        in both link fields or leave both empty.
-      </p>
+      <fieldset className="instagram-automation-step-group">
+        <legend>Primary responses</legend>
+        <p className="instagram-automation-help">
+          These actions run when a comment matches the trigger.
+        </p>
+        <label>
+          Public comment reply
+          <textarea
+            value={form.publicReply}
+            onChange={(event) =>
+              onFormChange({ ...form, publicReply: event.target.value })
+            }
+            maxLength={2200}
+            rows={3}
+            required
+            disabled={saving}
+            placeholder="Thanks for your comment!"
+          />
+        </label>
+        <label>
+          Opening DM
+          <textarea
+            value={form.directMessage}
+            onChange={(event) =>
+              onFormChange({ ...form, directMessage: event.target.value })
+            }
+            maxLength={1000}
+            rows={3}
+            required
+            disabled={saving}
+            placeholder="Thanks for commenting! Here’s the link you asked for."
+          />
+        </label>
+        <label>
+          Button label in the opening DM (optional)
+          <input
+            type="text"
+            value={form.directMessageLinkText}
+            onChange={(event) =>
+              onFormChange({ ...form, directMessageLinkText: event.target.value })
+            }
+            maxLength={20}
+            disabled={saving}
+            placeholder="Shop now"
+          />
+        </label>
+        <label>
+          Button destination URL (optional)
+          <input
+            type="url"
+            value={form.directMessageLinkUrl}
+            onChange={(event) =>
+              onFormChange({ ...form, directMessageLinkUrl: event.target.value })
+            }
+            maxLength={900}
+            disabled={saving}
+            placeholder="https://example.com/collection"
+          />
+        </label>
+        <p className="instagram-automation-help">
+          The button is included in the opening DM. Button labels can be up to
+          20 characters. Fill in both link fields or leave both empty.
+        </p>
+      </fieldset>
+
+      <section className="instagram-automation-step-group" aria-labelledby="follow-up-heading">
+        <h3 id="follow-up-heading">Follow-up</h3>
+        <p className="instagram-automation-help">
+          Reply-based follow-up steps are not supported by this flow yet. The
+          current link button is sent with the opening DM.
+        </p>
+      </section>
 
       {error && (
         <p className="inline-notice notice-error" role="alert">
@@ -500,7 +512,7 @@ export function InstagramCommentAutomationBuilder({ account }) {
                 {automation.directMessageLinkUrl && (
                   <p>
                     <strong>
-                      Follow-up button: {automation.directMessageLinkText}
+                      Opening DM button: {automation.directMessageLinkText}
                     </strong>
                     <span>{automation.directMessageLinkUrl}</span>
                   </p>

@@ -36,3 +36,9 @@ Spring Boot Actuator health is also available at `/actuator/health`.
 ```powershell
 .\mvnw.cmd test
 ```
+
+## Automation runtime
+
+Instagram comment automations are stored as versioned definitions containing a trigger and ordered steps. The runtime resolves trigger and step handlers by type, records each step outcome, and snapshots the definition version used by each execution. Existing comment automations without a saved definition are translated from their legacy columns when processed.
+
+The current API and editor still create Instagram comment flows only. A new trigger or action must register and validate its handler, add the event/configuration contract, and be exposed by the API and editor before users can configure it.
