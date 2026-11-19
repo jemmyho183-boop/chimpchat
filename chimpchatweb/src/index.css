@@ -522,12 +522,46 @@ select:focus-visible {
   min-height: 0;
   flex: 1;
   place-items: center;
-  padding: 1.25rem 0;
+  padding: clamp(1.25rem, 4vw, 3rem) 0;
+  background: radial-gradient(
+    circle at 50% 42%,
+    #fffdf1 0,
+    var(--color-white) 42%
+  );
 }
 
 .message-panel {
-  width: min(100%, 32rem);
-  padding: clamp(1.5rem, 5vw, 3rem);
+  text-align: center;
+}
+
+.card-icon {
+  display: grid;
+  font-size: 2.65rem;
+}
+
+.card-icon-glyph {
+  line-height: 1;
+}
+
+.message-panel h1 {
+  margin: 0;
+}
+
+.message-panel .button {
+  margin-top: 0.25rem;
+  width: 100%;
+}
+
+.message-panel .auth-secondary-button {
+  width: 100%;
+  margin-top: 0.75rem;
+}
+
+.message-meta {
+  margin: -0.75rem 0 1.5rem;
+  color: var(--color-ink-muted);
+  font-size: var(--text-xs);
+  line-height: 1.5;
 }
 
 .message-copy {
@@ -548,6 +582,10 @@ select:focus-visible {
   color: var(--color-ink-soft);
   font-size: var(--text-sm);
   text-underline-offset: 0.2em;
+}
+
+.text-link:hover {
+  color: var(--color-ink);
 }
 
 .onboarding-layout,

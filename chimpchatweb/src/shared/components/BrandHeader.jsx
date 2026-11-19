@@ -1,7 +1,4 @@
-export function BrandHeader({
-  caption = "INSTAGRAM CONVERSATION AUTOMATION",
-  children,
-}) {
+export function BrandHeader({ caption = "INSTAGRAM CONVERSATION AUTOMATION" }) {
   return (
     <header className="site-header">
       <a className="brand" href="/" aria-label="ChimpChat home">
@@ -9,7 +6,8 @@ export function BrandHeader({
           <img src="/logo-transparent.png" alt="" />
         </span>
         <span>chimpchat</span>
-      </a>{" "}
+      </a>
+      {caption && <span className="header-caption">{caption}</span>}
     </header>
   );
 }

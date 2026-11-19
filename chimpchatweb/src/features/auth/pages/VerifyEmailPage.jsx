@@ -37,7 +37,7 @@ export function VerifyEmailPage() {
         </Button>
         {!token && <p className="inline-notice notice-error" role="alert">This sign-in link is missing. Request a new one.</p>}
         {error && <p className="inline-notice notice-error" role="alert">{error}</p>}
-        <Link className="text-link" to="/signin">Back to sign in</Link>
+        <Button as={Link} variant="secondary" className="auth-secondary-button" to="/signin">Back to sign in</Button>
       </section>
     </main>
     <footer className="site-footer"><span>© {new Date().getFullYear()} ChimpChat</span><span>Made for better conversations.</span></footer>
